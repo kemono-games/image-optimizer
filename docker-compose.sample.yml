@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  kemono-games-search:
+    image: registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:{{GIT-SHA}}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+    ports:
+      - 8150:3000
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      - PORT=3000
+    volumes:
+      - ./cache:/app/cache
+      - ./optimizer.config.js:/app/optimizer.config.js

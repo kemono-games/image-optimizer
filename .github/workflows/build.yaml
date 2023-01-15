@@ -32,7 +32,7 @@ jobs:
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
           cp docker-compose.sample.yml /tmp/docker-compose-${GIT_HASH}.yml
           sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-${GIT_HASH}.yml
-          echo ${{ vars.OPTIMIZER_CONFIG_JS }} > /tmp/optimizer-config-${GIT_HASH}.js
+          echo "${{ vars.OPTIMIZER_CONFIG_JS }}" > /tmp/optimizer-config-${GIT_HASH}.js
 
           SERVER=("web01" "web02")
           parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer/cache'" ::: "${SERVER[@]}"

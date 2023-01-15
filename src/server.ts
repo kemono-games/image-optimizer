@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { pipe } from 'fp-ts/lib/function'
-import { delay } from 'fp-ts/lib/Task'
 import { NumberFromString } from 'io-ts-types'
 import { ReadStream } from 'node:fs'
 import http from 'node:http'
@@ -13,6 +12,7 @@ import { config } from './lib/config'
 import { D, O } from './lib/fp'
 import { Locker } from './lib/locker'
 import { optimizeImage } from './lib/optimizer'
+import { delay } from './lib/utils'
 
 export const paramsDecoder = (params: any) => ({
   url: pipe(D.string.decode(params.url), O.fromEither, O.toUndefined),
@@ -105,6 +105,7 @@ const server = http.createServer(async (req, res) => {
     if (await cacheLocker.isLocked()) {
       let cached: ReadStream | null = null
       while (!cached) {
+        await delay(100)
         const [res] = await cache.get()
         cached = res
       }

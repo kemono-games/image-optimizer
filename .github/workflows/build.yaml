@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
 jobs:
   build:
     concurrency:
@@ -13,14 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mr-smithers-excellent/docker-build-push@v5
-       name: Build Global & push Docker image
-       with:
-         image: kemono/image-optimizer
-         addLatest: true
-         registry: registry.ap-northeast-1.aliyuncs.com
-         dockerfile: deploy/Dockerfile
-         username: ${{ secrets.DOCKER_USERNAME }}
-         password: ${{ secrets.DOCKER_PASSWORD }}
+        name: Build Global & push Docker image
+        with:
+          image: kemono/image-optimizer
+          addLatest: true
+          registry: registry.ap-northeast-1.aliyuncs.com
+          dockerfile: deploy/Dockerfile
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
     needs: [push]
@@ -32,7 +32,7 @@ jobs:
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
           cp docker-compose.sample.yml /tmp/docker-compose-${GIT_HASH}.yml
           sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose.yml
-          
+
           SERVER=("web01" "web02")
           parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
           parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer/ ::: "${SERVER[@]}"

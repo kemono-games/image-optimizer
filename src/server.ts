@@ -1,15 +1,12 @@
-require('dotenv').config()
 import axios from 'axios'
 import { pipe } from 'fp-ts/lib/function'
 import { delay } from 'fp-ts/lib/Task'
 import { NumberFromString } from 'io-ts-types'
 import http from 'node:http'
 import querystring from 'node:querystring'
-import { PassThrough } from 'node:stream'
-
-import * as cache from '@/lib/cache'
 
 import pkg from '../package.json'
+import { Cache } from './lib/cache'
 import { config } from './lib/config'
 import { D, O } from './lib/fp'
 import { Locker } from './lib/locker'
@@ -79,11 +76,12 @@ const server = http.createServer(async (req, res) => {
   })
 
   const cacheLocker = new Locker({ ...params, targetFormat })
+  const cache = new Cache({ ...params, targetFormat })
 
   while (await cacheLocker.isLocked()) {
     await delay(100)
   }
-  const [cached, revalidate] = await cache.get({ ...params, targetFormat })
+  const [cached, revalidate] = await cache.get()
   if (cached) {
     console.log(
       `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
@@ -111,7 +109,7 @@ const server = http.createServer(async (req, res) => {
       quality: params.quality,
     })
     if (!cached) res.end(buffer)
-    await cache.set({ ...params, targetFormat }, buffer)
+    await cache.set(buffer)
     await cacheLocker.unlock()
     console.log(
       `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,

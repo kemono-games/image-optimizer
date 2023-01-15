@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
-    needs: [push]
+    needs: [build]
     runs-on: [self-hosted, docker]
     steps:
       - uses: actions/checkout@v3

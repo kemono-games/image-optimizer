@@ -4,9 +4,12 @@ import { pipe } from 'fp-ts/lib/function'
 import { NumberFromString } from 'io-ts-types'
 import http from 'node:http'
 import querystring from 'node:querystring'
+import { PassThrough } from 'node:stream'
 
-import config from '../optimizer.config'
+import * as cache from '@/lib/cache'
+
 import pkg from '../package.json'
+import { config } from './lib/config'
 import { D, O } from './lib/fp'
 import { optimizeImage } from './lib/optimizer'
 
@@ -77,17 +80,27 @@ const server = http.createServer(async (req, res) => {
     .filter((e) => e.startsWith('image/'))
   console.log(acceptFormats)
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
+
+  res.writeHead(200, {
+    'Content-Type': targetFormat,
+  })
+
+  const cached = cache.get({ ...params, targetFormat })
+  if (cached) {
+    return cached.pipe(res)
+  }
+
   const transformer = optimizeImage({
     contentType: targetFormat,
     width: params.width,
     height: params.height,
     quality: params.quality,
   })
-  res.writeHead(200, {
-    'Content-Type': targetFormat,
-  })
-  transformer.pipe(res)
-  data.pipe(transformer)
+
+  const stream1 = transformer.pipe(new PassThrough())
+  const stream2 = transformer.pipe(new PassThrough())
+  stream1.pipe(res)
+  stream2.pipe(cache.set({ ...params, targetFormat }))
 })
 
 server.listen(process.env.PORT || '3100')

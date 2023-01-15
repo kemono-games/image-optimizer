@@ -2,10 +2,12 @@ import axios from 'axios'
 import { pipe } from 'fp-ts/lib/function'
 import { delay } from 'fp-ts/lib/Task'
 import { NumberFromString } from 'io-ts-types'
+import { ReadStream } from 'node:fs'
 import http from 'node:http'
 import querystring from 'node:querystring'
 
 import pkg from '../package.json'
+import { returnOriginalFormats, supportedFormats } from './consts'
 import { Cache } from './lib/cache'
 import { config } from './lib/config'
 import { D, O } from './lib/fp'
@@ -33,6 +35,8 @@ const client = axios.create({
 })
 
 const server = http.createServer(async (req, res) => {
+  const startTime = Date.now()
+
   const { method, url, headers } = req
 
   if (method !== 'GET') {
@@ -61,7 +65,6 @@ const server = http.createServer(async (req, res) => {
     return res.end('Domain not allowed')
   }
 
-  const { data } = await client.get(imageUrl.toString())
   const { accept } = headers
   const acceptFormats =
     accept
@@ -71,50 +74,108 @@ const server = http.createServer(async (req, res) => {
       .filter((e) => e.startsWith('image/')) ?? []
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
 
-  res.writeHead(200, {
-    'Content-Type': targetFormat,
-  })
-
   const cacheLocker = new Locker({ ...params, targetFormat })
   const cache = new Cache({ ...params, targetFormat })
 
-  while (await cacheLocker.isLocked()) {
-    await delay(100)
-  }
   const [cached, revalidate] = await cache.get()
   if (cached) {
     console.log(
-      `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      `[Hit] ${Date.now() - startTime}ms ${params.url}, W:${params.width}, H:${
+        params.height
+      }, Q:${params.quality}, ${targetFormat}`,
     )
+    res.writeHead(200, {
+      'Content-Type': targetFormat,
+      'Cache-Control': 'public, max-age=31536000, must-revalidate',
+      'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
+    })
     cached.pipe(res)
+  }
+
+  if (cached && !revalidate) {
+    // Cache hit and not revalidate
+    return
+  } else if (cache && revalidate) {
+    // Cache hit and revalidate
+    if (await cacheLocker.isLocked()) {
+      return
+    }
   } else {
-    console.log(
-      `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-    )
+    // Cache miss
+    if (await cacheLocker.isLocked()) {
+      let cached: ReadStream | null = null
+      while (!cached) {
+        const [res] = await cache.get()
+        cached = res
+      }
+      res.writeHead(200, {
+        'Content-Type': targetFormat,
+        'Cache-Control': 'public, max-age=31536000, must-revalidate',
+        'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
+      })
+      console.log(
+        `[Miss] ${Date.now() - startTime}ms ${params.url}, W:${
+          params.width
+        }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      )
+      return cached.pipe(res)
+    }
   }
 
   if (revalidate) {
     console.log(
-      `[Revalidating] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      `[Revalidating] ${Date.now() - startTime}ms ${params.url}, W:${
+        params.width
+      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
   }
 
-  if (!cached || revalidate) {
-    await cacheLocker.lock()
-    const buffer = await optimizeImage({
+  await cacheLocker.lock()
+  const { data, headers: imageHeaders } = await client.get(imageUrl.toString())
+  const contentType = imageHeaders['content-type']
+  if (!contentType || !supportedFormats.includes(contentType)) {
+    await cacheLocker.unlock()
+    res.writeHead(400, {
+      'Content-Type': 'plain/text',
+    })
+    return res.end('Unsupported format')
+  }
+
+  let buffer: Buffer
+  let sendContentType: string
+  if (returnOriginalFormats.includes(contentType)) {
+    buffer = data
+    sendContentType = contentType
+  } else {
+    buffer = await optimizeImage({
       data,
       contentType: targetFormat,
       width: params.width,
       height: params.height,
       quality: params.quality,
     })
-    if (!cached) res.end(buffer)
-    await cache.set(buffer)
-    await cacheLocker.unlock()
-    console.log(
-      `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-    )
+    sendContentType = targetFormat
   }
+  if (!cached) {
+    console.log(
+      `[Miss] ${Date.now() - startTime}ms ${params.url}, W:${params.width}, H:${
+        params.height
+      }, Q:${params.quality}, ${targetFormat}`,
+    )
+    res.writeHead(200, {
+      'Content-Type': sendContentType,
+      'Cache-Control': 'public, max-age=31536000, must-revalidate',
+      'x-image-cache': 'MISS',
+    })
+    res.end(buffer)
+  }
+  await cache.set(buffer)
+  await cacheLocker.unlock()
+  console.log(
+    `[Updated] ${Date.now() - startTime}ms ${params.url}, W:${
+      params.width
+    }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+  )
 })
 
 server.listen(process.env.PORT || '3100')

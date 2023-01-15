@@ -30,7 +30,7 @@ export async function optimizeImage({
   if (contentType === AVIF) {
     const avifQuality = Math.max(quality - 15, 0)
     transformer.avif({
-      effort: 2,
+      effort: 4,
       quality: avifQuality,
       chromaSubsampling: '4:2:0', // same as webp
     })

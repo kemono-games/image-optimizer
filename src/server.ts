@@ -39,6 +39,10 @@ const server = http.createServer(async (req, res) => {
 
   const { method, url, headers } = req
 
+  if (method === 'HEAD' && url === '/health') {
+    return res.end('OK')
+  }
+
   if (method !== 'GET') {
     res.writeHead(405)
     return res.end('Method not allowed')

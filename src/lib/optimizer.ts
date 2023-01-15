@@ -27,14 +27,15 @@ export async function optimizeImage({
     })
   }
 
-  if (contentType === AVIF) {
-    const avifQuality = Math.max(quality - 15, 0)
-    transformer.avif({
-      effort: 4,
-      quality: avifQuality,
-      chromaSubsampling: '4:2:0', // same as webp
-    })
-  } else if (contentType === WEBP) {
+  // if (contentType === AVIF) {
+  //   const avifQuality = Math.max(quality - 15, 0)
+  //   transformer.avif({
+  //     effort: 4,
+  //     quality: avifQuality,
+  //     chromaSubsampling: '4:2:0', // same as webp
+  //   })
+  // } else
+  if (contentType === WEBP) {
     transformer.webp({ quality })
   } else if (contentType === PNG) {
     transformer.png({ quality })

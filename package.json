@@ -4,15 +4,17 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "NODE_ENV=production node dist/server.js",
+    "start": "NODE_ENV=production node dist/bootstrap.js",
     "dev": "NODE_ENV=development nodemon",
-    "build": "tsc && tsc-alias"
+    "build": "swc src -d dist --source-maps --copy-files"
   },
   "devDependencies": {
+    "@swc/cli": "^0.1.59",
     "@swc/core": "^1.3.26",
     "@swc/helpers": "^0.4.14",
     "@types/morgan": "^1.9.3",
     "@types/node": "^18",
+    "@types/node-cron": "^3.0.7",
     "@types/object-hash": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
@@ -36,6 +38,7 @@
     "ioredis": "^5.2.5",
     "monocle-ts": "^2.3.13",
     "newtype-ts": "^0.3.5",
+    "node-cron": "^3.0.2",
     "object-hash": "^3.0.0",
     "sharp": "^0.31.3"
   }

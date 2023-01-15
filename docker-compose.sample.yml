@@ -7,7 +7,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 500M
+          memory: 1000M
     ports:
       - 8150:3000
     extra_hosts:

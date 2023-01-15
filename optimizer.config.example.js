@@ -12,4 +12,5 @@ module.exports = {
   revalidate: 300,
   ttl: 24 * 60 * 60,
   cleanSchedule: '0 2 * * *',
+  urlParser: (url) => url,
 }

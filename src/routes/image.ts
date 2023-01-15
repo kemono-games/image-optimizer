@@ -77,7 +77,7 @@ export const imageRouter = async (
   const [cached, revalidate] = await cache.get()
   if (cached) {
     console.log(
-      `[Hit] ${Date.now() - startTime}ms ${params.url}, W:${params.width}, H:${
+      `[Hit ${Date.now() - startTime}ms] ${params.url}, W:${params.width}, H:${
         params.height
       }, Q:${params.quality}, ${targetFormat}`,
     )
@@ -112,7 +112,7 @@ export const imageRouter = async (
         'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
       })
       console.log(
-        `[Miss] ${Date.now() - startTime}ms ${params.url}, W:${
+        `[Miss ${Date.now() - startTime}ms] ${params.url}, W:${
           params.width
         }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
       )
@@ -122,56 +122,67 @@ export const imageRouter = async (
 
   if (revalidate) {
     console.log(
-      `[Revalidating] ${Date.now() - startTime}ms ${params.url}, W:${
+      `[Revalidating ${Date.now() - startTime}ms] ${params.url}, W:${
         params.width
       }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
   }
 
   await cacheLocker.lock()
-  const { data, headers: imageHeaders } = await client.get(imageUrl.toString())
-  const contentType = imageHeaders['content-type']
-  if (!contentType || !supportedFormats.includes(contentType)) {
-    await cacheLocker.unlock()
-    res.writeHead(400, {
-      'Content-Type': 'plain/text',
-    })
-    return res.end('Unsupported format')
-  }
-
-  let buffer: Buffer
-  let sendContentType: string
-  if (returnOriginalFormats.includes(contentType)) {
-    buffer = data
-    sendContentType = contentType
-  } else {
-    buffer = await optimizeImage({
-      data,
-      contentType: targetFormat,
-      width: params.width,
-      height: params.height,
-      quality: params.quality,
-    })
-    sendContentType = targetFormat
-  }
-  if (!cached) {
-    console.log(
-      `[Miss] ${Date.now() - startTime}ms ${params.url}, W:${params.width}, H:${
-        params.height
-      }, Q:${params.quality}, ${targetFormat}`,
+  try {
+    const { data, headers: imageHeaders } = await client.get(
+      config.urlParser(imageUrl.toString()),
     )
-    res.writeHead(200, {
-      'Content-Type': sendContentType,
-      'Cache-Control': 'public, max-age=31536000, must-revalidate',
-      'x-image-cache': 'MISS',
-    })
-    res.end(buffer)
+    const contentType = imageHeaders['content-type']
+    if (!contentType || !supportedFormats.includes(contentType)) {
+      await cacheLocker.unlock()
+      res.writeHead(400, {
+        'Content-Type': 'plain/text',
+      })
+      return res.end('Unsupported format')
+    }
+
+    let buffer: Buffer
+    let sendContentType: string
+    if (returnOriginalFormats.includes(contentType)) {
+      buffer = data
+      sendContentType = contentType
+    } else {
+      buffer = await optimizeImage({
+        data,
+        contentType: targetFormat,
+        width: params.width,
+        height: params.height,
+        quality: params.quality,
+      })
+      sendContentType = targetFormat
+    }
+    if (!cached) {
+      console.log(
+        `[Miss ${Date.now() - startTime}ms] ${params.url}, W:${
+          params.width
+        }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      )
+      res.writeHead(200, {
+        'Content-Type': sendContentType,
+        'Cache-Control': 'public, max-age=31536000, must-revalidate',
+        'x-image-cache': 'MISS',
+      })
+      res.end(buffer)
+    }
+    await cache.set(buffer)
+    console.log(
+      `[Updated ${Date.now() - startTime}ms] ${params.url}, W:${
+        params.width
+      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+  } catch (err) {
+    console.error(
+      `[Error ${Date.now() - startTime}ms] ${err.message} ${params.url}, W:${
+        params.width
+      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+  } finally {
+    await cacheLocker.unlock()
   }
-  await cache.set(buffer)
-  await cacheLocker.unlock()
-  console.log(
-    `[Updated] ${Date.now() - startTime}ms ${params.url}, W:${
-      params.width
-    }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-  )
 }

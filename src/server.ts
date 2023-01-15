@@ -15,18 +15,10 @@ import { optimizeImage } from './lib/optimizer'
 
 export const paramsDecoder = (params: any) => ({
   url: pipe(D.string.decode(params.url), O.fromEither, O.toUndefined),
-  width: pipe(
-    NumberFromString.decode(params.width),
-    O.fromEither,
-    O.toUndefined,
-  ),
-  height: pipe(
-    NumberFromString.decode(params.width),
-    O.fromEither,
-    O.toUndefined,
-  ),
+  width: pipe(NumberFromString.decode(params.w), O.fromEither, O.toUndefined),
+  height: pipe(NumberFromString.decode(params.h), O.fromEither, O.toUndefined),
   quality: pipe(
-    NumberFromString.decode(params.quality),
+    NumberFromString.decode(params.q),
     O.fromEither,
     O.getOrElse(() => 75),
   ),
@@ -37,7 +29,7 @@ const client = axios.create({
     'User-Agent': `Kemono Games Image Optimizer/${pkg.version}}`,
     'Accept-Encoding': 'br;q=1.0, gzip;q=0.8, *;q=0.1',
   },
-  responseType: 'stream',
+  responseType: 'arraybuffer',
   timeout: 10000,
 })
 
@@ -73,11 +65,12 @@ const server = http.createServer(async (req, res) => {
   console.log(imageUrl)
   const { data } = await client.get(imageUrl.toString())
   const { accept } = headers
-  const acceptFormats = accept
-    ?.split(',')
-    .map((e) => e.split(';'))
-    .flat()
-    .filter((e) => e.startsWith('image/'))
+  const acceptFormats =
+    accept
+      ?.split(',')
+      .map((e) => e.split(';'))
+      .flat()
+      .filter((e) => e.startsWith('image/')) ?? []
   console.log(acceptFormats)
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
 
@@ -85,12 +78,14 @@ const server = http.createServer(async (req, res) => {
     'Content-Type': targetFormat,
   })
 
-  const cached = cache.get({ ...params, targetFormat })
-  if (cached) {
-    return cached.pipe(res)
-  }
+  // const cached = cache.get({ ...params, targetFormat })
+  // if (cached) {
+  //   return cached.pipe(res)
+  // }
 
+  console.log(params)
   const transformer = optimizeImage({
+    data,
     contentType: targetFormat,
     width: params.width,
     height: params.height,

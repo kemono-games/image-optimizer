@@ -3,17 +3,19 @@ import sharp, { Sharp } from 'sharp'
 import { AVIF, JPEG, PNG, WEBP } from '@/consts'
 
 export function optimizeImage({
+  data,
   contentType,
   quality,
   width,
   height,
 }: {
+  data: Buffer
   contentType: string
   quality: number
   width?: number
   height?: number
 }): Sharp {
-  const transformer = sharp({
+  const transformer = sharp(data, {
     sequentialRead: true,
   })
 
@@ -26,9 +28,9 @@ export function optimizeImage({
   }
 
   if (contentType === AVIF) {
-    const avifQuality = quality - 15
+    const avifQuality = Math.max(quality - 15, 0)
     transformer.avif({
-      quality: Math.max(avifQuality, 0),
+      quality: avifQuality,
       chromaSubsampling: '4:2:0', // same as webp
     })
   } else if (contentType === WEBP) {

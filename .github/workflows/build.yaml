@@ -35,7 +35,7 @@ jobs:
           echo ${{ vars.OPTIMIZER_CONFIG_JS }} > /tmp/optimizer-config-${GIT_HASH}.js
 
           SERVER=("web01" "web02")
-          parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
+          parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer/cache'" ::: "${SERVER[@]}"
           parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
           parallel scp /tmp/optimizer-config-${GIT_HASH}.js {}.jp.internal.abo.network:/root/image-optimizer/optimizer-config.js ::: "${SERVER[@]}"
           parallel "ssh {}.jp.internal.abo.network 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"

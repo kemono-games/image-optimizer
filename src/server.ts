@@ -1,6 +1,7 @@
 require('dotenv').config()
 import axios from 'axios'
 import { pipe } from 'fp-ts/lib/function'
+import { delay } from 'fp-ts/lib/Task'
 import { NumberFromString } from 'io-ts-types'
 import http from 'node:http'
 import querystring from 'node:querystring'
@@ -11,6 +12,7 @@ import * as cache from '@/lib/cache'
 import pkg from '../package.json'
 import { config } from './lib/config'
 import { D, O } from './lib/fp'
+import { Locker } from './lib/locker'
 import { optimizeImage } from './lib/optimizer'
 
 export const paramsDecoder = (params: any) => ({
@@ -62,7 +64,6 @@ const server = http.createServer(async (req, res) => {
     return res.end('Domain not allowed')
   }
 
-  console.log(imageUrl)
   const { data } = await client.get(imageUrl.toString())
   const { accept } = headers
   const acceptFormats =
@@ -71,31 +72,51 @@ const server = http.createServer(async (req, res) => {
       .map((e) => e.split(';'))
       .flat()
       .filter((e) => e.startsWith('image/')) ?? []
-  console.log(acceptFormats)
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
 
   res.writeHead(200, {
     'Content-Type': targetFormat,
   })
 
-  // const cached = cache.get({ ...params, targetFormat })
-  // if (cached) {
-  //   return cached.pipe(res)
-  // }
+  const cacheLocker = new Locker({ ...params, targetFormat })
 
-  console.log(params)
-  const transformer = optimizeImage({
-    data,
-    contentType: targetFormat,
-    width: params.width,
-    height: params.height,
-    quality: params.quality,
-  })
+  while (await cacheLocker.isLocked()) {
+    await delay(100)
+  }
+  const [cached, revalidate] = await cache.get({ ...params, targetFormat })
+  if (cached) {
+    console.log(
+      `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+    cached.pipe(res)
+  } else {
+    console.log(
+      `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+  }
 
-  const stream1 = transformer.pipe(new PassThrough())
-  const stream2 = transformer.pipe(new PassThrough())
-  stream1.pipe(res)
-  stream2.pipe(cache.set({ ...params, targetFormat }))
+  if (revalidate) {
+    console.log(
+      `[Revalidating] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+  }
+
+  if (!cached || revalidate) {
+    await cacheLocker.lock()
+    const buffer = await optimizeImage({
+      data,
+      contentType: targetFormat,
+      width: params.width,
+      height: params.height,
+      quality: params.quality,
+    })
+    if (!cached) res.end(buffer)
+    await cache.set({ ...params, targetFormat }, buffer)
+    await cacheLocker.unlock()
+    console.log(
+      `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    )
+  }
 })
 
 server.listen(process.env.PORT || '3100')

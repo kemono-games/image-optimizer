@@ -1,8 +1,8 @@
-import sharp, { Sharp } from 'sharp'
+import sharp from 'sharp'
 
 import { AVIF, JPEG, PNG, WEBP } from '@/consts'
 
-export function optimizeImage({
+export async function optimizeImage({
   data,
   contentType,
   quality,
@@ -14,7 +14,7 @@ export function optimizeImage({
   quality: number
   width?: number
   height?: number
-}): Sharp {
+}): Promise<Buffer> {
   const transformer = sharp(data, {
     sequentialRead: true,
   })
@@ -41,5 +41,6 @@ export function optimizeImage({
     transformer.jpeg({ quality })
   }
 
-  return transformer
+  const buf = await transformer.toBuffer()
+  return buf
 }

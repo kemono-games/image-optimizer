@@ -1,10 +1,13 @@
 import cron from 'node-cron'
 
+import Logger from '@/lib/logger'
+
 import { clean } from './lib/cache'
 import { config } from './lib/config'
 
+const logger = Logger.get('tasks')
 cron.schedule(config.cleanSchedule, async () => {
-  console.log('Start clean cache...')
+  logger.info('Start clean cache...')
   await clean()
-  console.log('Clean cache done.')
+  logger.info('Clean cache done.')
 })

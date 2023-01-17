@@ -13,4 +13,9 @@ module.exports = {
   ttl: 24 * 60 * 60,
   cleanSchedule: '0 2 * * *',
   urlParser: (url) => url,
+  log: {
+    accessLog: 'stdout',
+    serverLog: 'stdout',
+    serverLogLevel: 'info',
+  },
 }

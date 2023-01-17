@@ -9,14 +9,16 @@ import { Cache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, O } from '@/lib/fp'
 import { Locker } from '@/lib/locker'
+import Logger from '@/lib/logger'
 import { optimizeImage } from '@/lib/optimizer'
 import { delay } from '@/lib/utils'
 
 import pkg from '../../package.json'
 
+const logger = Logger.get('image optimize')
 const client = axios.create({
   headers: {
-    'User-Agent': `Kemono Games Image Optimizer/${pkg.version}}`,
+    'User-Agent': `Image Optimizer/${pkg.version}}`,
     'Accept-Encoding': 'br;q=1.0, gzip;q=0.8, *;q=0.1',
   },
   responseType: 'arraybuffer',
@@ -36,7 +38,6 @@ export const paramsDecoder = (params: any) => ({
 
 const router = Router()
 router.get('/', async (req, res) => {
-  const startTime = Date.now()
   const { query, headers } = req
   const params = paramsDecoder(query)
   if (!params.url) {
@@ -73,10 +74,9 @@ router.get('/', async (req, res) => {
 
   const [cached, revalidate] = await cache.get()
   if (cached) {
-    console.log(
-      `[Hit ${Date.now() - startTime}ms] ${params.url}, W:${params.width}, H:${
-        params.height
-      }, Q:${params.quality}, ${targetFormat}`,
+    logger.timeEnd('image optimize start')
+    logger.info(
+      `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
     res.writeHead(200, {
       'Content-Type': targetFormat,
@@ -108,20 +108,16 @@ router.get('/', async (req, res) => {
         'Cache-Control': 'public, max-age=31536000, must-revalidate',
         'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
       })
-      console.log(
-        `[Miss ${Date.now() - startTime}ms] ${params.url}, W:${
-          params.width
-        }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      logger.info(
+        `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
       )
       return cached.pipe(res)
     }
   }
 
   if (revalidate) {
-    console.log(
-      `[Revalidating ${Date.now() - startTime}ms] ${params.url}, W:${
-        params.width
-      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    logger.info(
+      `[Revalidating] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
   }
 
@@ -145,6 +141,7 @@ router.get('/', async (req, res) => {
       buffer = data
       sendContentType = contentType
     } else {
+      logger.time('image optimize cost')
       buffer = await optimizeImage({
         data,
         contentType: targetFormat,
@@ -152,13 +149,12 @@ router.get('/', async (req, res) => {
         height: params.height,
         quality: params.quality,
       })
+      logger.timeEnd('image optimize cost')
       sendContentType = targetFormat
     }
     if (!cached) {
-      console.log(
-        `[Miss ${Date.now() - startTime}ms] ${params.url}, W:${
-          params.width
-        }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+      logger.info(
+        `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
       )
       res.writeHead(200, {
         'Content-Type': sendContentType,
@@ -168,16 +164,12 @@ router.get('/', async (req, res) => {
       res.end(buffer)
     }
     await cache.set(buffer)
-    console.log(
-      `[Updated ${Date.now() - startTime}ms] ${params.url}, W:${
-        params.width
-      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    logger.info(
+      `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
   } catch (err) {
-    console.error(
-      `[Error ${Date.now() - startTime}ms] ${err.message} ${params.url}, W:${
-        params.width
-      }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+    logger.error(
+      `${err.message} ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
   } finally {
     await cacheLocker.unlock()

@@ -38,6 +38,7 @@
     "io-ts": "^2.2.20",
     "io-ts-types": "^0.5.19",
     "ioredis": "^5.2.5",
+    "js-logger": "^1.6.1",
     "monocle-ts": "^2.3.13",
     "morgan": "^1.10.0",
     "newtype-ts": "^0.3.5",

@@ -5,7 +5,7 @@ import { NumberFromString } from 'io-ts-types'
 import { ReadStream } from 'node:fs'
 import querystring from 'node:querystring'
 
-import { returnOriginalFormats, supportedFormats, supportedTargerFormats } from '@/consts'
+import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
 import { Cache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, O } from '@/lib/fp'
@@ -69,7 +69,7 @@ export const imageRouter = async (
       .map((e) => e.split(';'))
       .flat()
       .filter((e) => e.startsWith('image/'))
-      .filter((e) => supportedTargerFormats.includes(e)) ?? []
+      .filter((e) => supportedTargetFormats.includes(e)) ?? []
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
 
   const cacheLocker = new Locker({ ...params, targetFormat })

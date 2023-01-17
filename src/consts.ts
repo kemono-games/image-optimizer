@@ -6,5 +6,5 @@ export const GIF = 'image/gif'
 export const SVG = 'image/svg+xml'
 
 export const supportedFormats = [AVIF, WEBP, PNG, JPEG, GIF, SVG]
-export const supportedTargerFormats = [WEBP, PNG, JPEG]
+export const supportedTargetFormats = [WEBP, PNG, JPEG]
 export const returnOriginalFormats = [GIF, SVG]

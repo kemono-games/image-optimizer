@@ -18,4 +18,5 @@ module.exports = {
     serverLog: 'stdout',
     serverLogLevel: 'info',
   },
+  sentryDsn: '',
 }

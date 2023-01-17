@@ -1,21 +1,13 @@
-import http from 'node:http'
+import express from 'express'
+import morgan from 'morgan'
 
-import { imageRouter } from './routes/image'
+import imageRouter from './routes/image'
 
-const server = http.createServer(async (req, res) => {
-  const { method, url } = req
+const app = express()
+app.use(morgan('dev'))
+app.use(express.urlencoded({ extended: false }))
 
-  if (method === 'HEAD' && url === '/health') {
-    return res.end('OK')
-  }
+app.head('/health', (_, res) => res.send('ok'))
+app.use('/image', imageRouter)
 
-  if (method === 'GET' && url.startsWith('/image')) {
-    imageRouter(req, res)
-    return
-  }
-
-  res.writeHead(405)
-  return res.end('Method not allowed')
-})
-
-server.listen(process.env.PORT || 3100)
+app.listen(process.env.PORT || 3100)

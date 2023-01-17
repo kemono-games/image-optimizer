@@ -1,9 +1,8 @@
 import axios from 'axios'
+import { Router } from 'express'
 import { pipe } from 'fp-ts/lib/function'
-import { IncomingMessage, ServerResponse } from 'http'
 import { NumberFromString } from 'io-ts-types'
 import { ReadStream } from 'node:fs'
-import querystring from 'node:querystring'
 
 import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
 import { Cache } from '@/lib/cache'
@@ -14,6 +13,15 @@ import { optimizeImage } from '@/lib/optimizer'
 import { delay } from '@/lib/utils'
 
 import pkg from '../../package.json'
+
+const client = axios.create({
+  headers: {
+    'User-Agent': `Kemono Games Image Optimizer/${pkg.version}}`,
+    'Accept-Encoding': 'br;q=1.0, gzip;q=0.8, *;q=0.1',
+  },
+  responseType: 'arraybuffer',
+  timeout: 10000,
+})
 
 export const paramsDecoder = (params: any) => ({
   url: pipe(D.string.decode(params.url), O.fromEither, O.toUndefined),
@@ -26,23 +34,11 @@ export const paramsDecoder = (params: any) => ({
   ),
 })
 
-const client = axios.create({
-  headers: {
-    'User-Agent': `Kemono Games Image Optimizer/${pkg.version}}`,
-    'Accept-Encoding': 'br;q=1.0, gzip;q=0.8, *;q=0.1',
-  },
-  responseType: 'arraybuffer',
-  timeout: 10000,
-})
-
-export const imageRouter = async (
-  req: IncomingMessage,
-  res: ServerResponse<IncomingMessage>,
-) => {
+const router = Router()
+router.get('/', async (req, res) => {
   const startTime = Date.now()
-  const { url, headers } = req
-  const qs = url.split('?')[1] ?? ''
-  const params = paramsDecoder(querystring.parse(qs))
+  const { query, headers } = req
+  const params = paramsDecoder(query)
   if (!params.url) {
     res.writeHead(400)
     return res.end('Missing url parameter')
@@ -186,4 +182,6 @@ export const imageRouter = async (
   } finally {
     await cacheLocker.unlock()
   }
-}
+})
+
+export default router

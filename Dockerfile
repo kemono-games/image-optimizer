@@ -23,7 +23,7 @@ COPY --from=runner-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json yarn.lock* ./
 COPY optimizer.config.example.js ./optimizer.config.example.js
-COPY optimizer.config.example.js ./optimizer.config.js
+RUN mv optimizer.config.example.js optimizer.config.js
 
 ENV NODE_ENV production
 

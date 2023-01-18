@@ -26,14 +26,14 @@ if (config.sentryDsn) {
 }
 
 app.use(
-  morgan(
-    'dev',
-    config.log.accessLog === 'stdout'
-      ? undefined
+  morgan('dev', {
+    ...(config.log.accessLog === 'stdout'
+      ? {}
       : {
           stream: fs.createWriteStream(config.log.accessLog, { flags: 'a' }),
-        },
-  ),
+        }),
+    skip: (req) => req.path === '/health',
+  }),
 )
 app.use(express.urlencoded({ extended: false }))
 

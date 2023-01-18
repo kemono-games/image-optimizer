@@ -12,7 +12,7 @@ import redisClient from './redis'
 
 const logger = Logger.get('cache')
 const getCacheFilePath = (hash: string) => {
-  return path.join(config.cacheDir, hash.slice(0, 2), hash.slice(2, 4), hash)
+  return path.join(config.cachePath, hash.slice(0, 2), hash.slice(2, 4), hash)
 }
 export class Cache {
   private key: string

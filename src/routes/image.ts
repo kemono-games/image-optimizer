@@ -140,7 +140,6 @@ router.get('/', async (req, res) => {
       buffer = data
       sendContentType = contentType
     } else {
-      logger.time('image optimize cost')
       buffer = await optimizeImage({
         data,
         contentType: targetFormat,
@@ -148,7 +147,6 @@ router.get('/', async (req, res) => {
         height: params.height,
         quality: params.quality,
       })
-      logger.timeEnd('image optimize cost')
       sendContentType = targetFormat
     }
     if (!cached) {

@@ -74,6 +74,7 @@ router.get('/', async (req, res) => {
 
   const [cached, revalidate] = await cache.get()
   if (cached) {
+    logger.timeEnd('image optimize start')
     logger.info(
       `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )

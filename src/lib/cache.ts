@@ -20,7 +20,6 @@ export class Cache {
     this.key = `image_cache:${hash(params)}`
   }
   get = async (): Promise<[null] | [ReadStream, boolean]> => {
-    logger.time('get cache cost')
     const cached = await redisClient.hgetall(this.key)
     const { timestamp, file } = cached
     if (!timestamp || !file) return [null]
@@ -35,12 +34,10 @@ export class Cache {
       redisClient.del(this.key)
       return [null]
     }
-    logger.timeEnd('get cache cost')
     return [fs.createReadStream(getCacheFilePath(file)), revalidate]
   }
 
   set = async (data) => {
-    logger.time('set cache cost')
     const fileHash = crypto.createHash('sha1').update(data).digest('hex')
     fs.mkdirSync(getCacheFilePath(fileHash).split('/').slice(0, -1).join('/'), {
       recursive: true,
@@ -56,7 +53,6 @@ export class Cache {
     } catch (err) {
       logger.error('Error while create image cache: ', err)
     }
-    logger.timeEnd('set cache cost')
   }
 }
 

@@ -1,3 +1,9 @@
+const { execSync } = require('child_process')
+
+// Try to get default path of ffmpeg and ffprobe
+const ffmpegPath = execSync('which ffmpeg').toString().trim()
+const ffprobePath = execSync('which ffprobe').toString().trim()
+
 module.exports = {
   domains: [
     // Add your domains here
@@ -17,6 +23,10 @@ module.exports = {
     accessLog: 'stdout',
     serverLog: 'stdout',
     serverLogLevel: 'info',
+  },
+  gifOptimize: {
+    ffmpegPath,
+    ffprobePath,
   },
   sentryDsn: '',
 }

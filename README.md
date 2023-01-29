@@ -36,14 +36,14 @@ Like this:
 
 ```html
 <link
-	rel="preload"
-	as="image"
-	imageSizes="(min-width: 62em) 340px, (min-width: 48em) 240px, (min-width: 30em) 720px, 720px"
-	imageSrcSet="https://image-optimizer.example.com/image?url={url_of_original_image}&w=16&q=75 16w,
-					https://image-optimizer.example.com/image?url={url_of_original_image}&w=32&q=75 32w,
-				  https://image-optimizer.example.com/image?url={url_of_original_image}&w=48&q=75 48w,
-					...
-					https://image-optimizer.example.com/image?url={url_of_original_image}&w=3840&q=75 3840w"
+  rel="preload"
+  as="image"
+  imageSizes="(min-width: 62em) 340px, (min-width: 48em) 240px, (min-width: 30em) 720px, 720px"
+  imageSrcSet="https://image-optimizer.example.com/image?url={url_of_original_image}&w=16&q=75 16w,
+    https://image-optimizer.example.com/image?url={url_of_original_image}&w=32&q=75 32w,
+    https://image-optimizer.example.com/image?url={url_of_original_image}&w=48&q=75 48w,
+    ...
+    https://image-optimizer.example.com/image?url={url_of_original_image}&w=3840&q=75 3840w"
 />
 ```
 

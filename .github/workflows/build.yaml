@@ -27,7 +27,7 @@ jobs:
         with:
           push: true
           context: .
-          tags: registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:main-${{ env.SHA }}
+          tags: registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
           file: Dockerfile
 
   deploy:

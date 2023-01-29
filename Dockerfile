@@ -14,7 +14,7 @@ RUN yarn build
 
 FROM node:18-alpine AS runner
 WORKDIR /app
-COPY --from=runner-deps /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json yarn.lock* ./
 COPY optimizer.config.example.js ./optimizer.config.example.js

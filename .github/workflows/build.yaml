@@ -37,7 +37,7 @@ jobs:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false
     needs: [build]
-    runs-on: [self-hosted, home]
+    runs-on: [self-hosted, docker]
     steps:
       - uses: actions/checkout@v3
       - name: Deploy Global

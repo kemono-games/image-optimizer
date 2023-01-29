@@ -52,3 +52,9 @@ jobs:
           parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
           parallel scp /tmp/optimizer-config-${GIT_HASH}.js {}.jp.internal.abo.network:/root/image-optimizer/optimizer.config.js ::: "${SERVER[@]}"
           parallel "ssh {}.jp.internal.abo.network 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_USERNAME: 'GitHub Actions'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: 'image-optimizer 已部署'

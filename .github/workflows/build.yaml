@@ -31,6 +31,9 @@ jobs:
           file: Dockerfile
 
   deploy:
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
     needs: [build]
     runs-on: [self-hosted, home]
     steps:

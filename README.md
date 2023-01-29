@@ -25,7 +25,7 @@ Then the browser will automatically select the most suitable image according to 
 
 Image Optimizer also determines which image types are supported by the user's browser based on the `Accept` header sent by the user.
 
-For example **`Accept:** image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8` means user’s browser support `webp` , in that case Image Optimizer will return `webp` format image which is much smaller.
+For example `Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8` means user’s browser support `webp` , in that case Image Optimizer will return `webp` format image which is much smaller.
 
 > `avif` is also supported and offers a higher compression ratio than `webp`, but at the cost of a long compression time (about 1~2s), which is unacceptable at the first user visit. So I decided to turn it off at this time. My plan is to design a queue. When a user visits an image for the first time, the `webp` version will be served first (if the user supports it), then a task will be added to the queue to create an `avif` version of the image when the server is free.  When another user visits, a more compressed `avif` image will be served directly from the cache.
 > 

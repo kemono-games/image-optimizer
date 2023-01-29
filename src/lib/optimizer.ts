@@ -2,21 +2,19 @@ import sharp from 'sharp'
 
 import { AVIF, JPEG, PNG, WEBP } from '@/consts'
 
-export async function optimizeImage({
-  data,
+export function optimizeImage({
   contentType,
   quality,
   width,
   height,
 }: {
-  data: Buffer
   contentType: string
   quality: number
   width?: number
   height?: number
-}): Promise<Buffer> {
-  const transformer = sharp(data, {
-    sequentialRead: true,
+}) {
+  const transformer = sharp({
+    pages: -1,
   })
 
   transformer.rotate()
@@ -41,7 +39,5 @@ export async function optimizeImage({
   } else if (contentType === JPEG) {
     transformer.jpeg({ quality })
   }
-
-  const buf = await transformer.toBuffer()
-  return buf
+  return transformer
 }

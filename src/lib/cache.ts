@@ -3,6 +3,7 @@ import fs, { ReadStream } from 'fs'
 import fsPromise from 'fs/promises'
 import hash from 'object-hash'
 import path from 'path'
+import { PassThrough } from 'stream'
 
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
@@ -14,6 +15,7 @@ const logger = Logger.get('cache')
 const getCacheFilePath = (hash: string) => {
   return path.join(config.cachePath, hash.slice(0, 2), hash.slice(2, 4), hash)
 }
+
 export class Cache {
   private key: string
   constructor(params: CachaParams) {
@@ -37,23 +39,38 @@ export class Cache {
     return [fs.createReadStream(getCacheFilePath(file)), revalidate]
   }
 
-  set = async (data) => {
-    const fileHash = crypto.createHash('sha1').update(data).digest('hex')
-    fs.mkdirSync(getCacheFilePath(fileHash).split('/').slice(0, -1).join('/'), {
-      recursive: true,
+  set = (data: PassThrough) =>
+    new Promise<void>((resolve, reject) => {
+      const bufs = []
+      const cipher = crypto.createHash('sha1')
+      data.on('data', (chunk) => {
+        bufs.push(chunk)
+        cipher.update(chunk)
+      })
+      data.on('end', async () => {
+        const data = Buffer.concat(bufs)
+        const fileHash = cipher.digest('hex')
+        fs.mkdirSync(
+          getCacheFilePath(fileHash).split('/').slice(0, -1).join('/'),
+          {
+            recursive: true,
+          },
+        )
+        try {
+          await Promise.all([
+            redisClient.hset(this.key, {
+              file: fileHash,
+              timestamp: `${Date.now()}`,
+            }),
+            fsPromise.writeFile(getCacheFilePath(fileHash), data),
+          ])
+          resolve()
+        } catch (err) {
+          logger.error('Error while create image cache: ', err)
+          reject(err)
+        }
+      })
     })
-    try {
-      await Promise.all([
-        redisClient.hset(this.key, {
-          file: fileHash,
-          timestamp: `${Date.now()}`,
-        }),
-        fsPromise.writeFile(getCacheFilePath(fileHash), data),
-      ])
-    } catch (err) {
-      logger.error('Error while create image cache: ', err)
-    }
-  }
 }
 
 export const clean = async () => {

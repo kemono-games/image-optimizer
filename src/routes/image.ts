@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { pipe } from 'fp-ts/lib/function'
 import { NumberFromString } from 'io-ts-types'
 import { ReadStream } from 'node:fs'
+import { PassThrough } from 'node:stream'
 
 import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
 import { Cache } from '@/lib/cache'
@@ -89,12 +90,13 @@ router.get('/', async (req, res) => {
     // Cache hit and not revalidate
     return
   } else if (cache && revalidate) {
-    // Cache hit and revalidate
+    // Cache hit and revalidate but has a running task
     if (await cacheLocker.isLocked()) {
+      console.log('locked')
       return
     }
   } else {
-    // Cache miss
+    // Cache miss but has a running task
     if (await cacheLocker.isLocked()) {
       let cached: ReadStream | null = null
       while (!cached) {
@@ -120,36 +122,43 @@ router.get('/', async (req, res) => {
     )
   }
 
+  // revalidate or cache miss
   await cacheLocker.lock()
   try {
     const { data, headers: imageHeaders } = await client.get(
       config.urlParser(imageUrl.toString()),
+      {
+        responseType: 'stream',
+      },
     )
     const contentType = imageHeaders['content-type']
     if (!contentType || !supportedFormats.includes(contentType)) {
-      await cacheLocker.unlock()
       res.writeHead(400, {
         'Content-Type': 'plain/text',
       })
+      await cacheLocker.unlock()
       return res.end('Unsupported format')
     }
 
-    let buffer: Buffer
-    let sendContentType: string
     if (returnOriginalFormats.includes(contentType)) {
-      buffer = data
-      sendContentType = contentType
-    } else {
-      buffer = await optimizeImage({
-        data,
-        contentType: targetFormat,
-        width: params.width,
-        height: params.height,
-        quality: params.quality,
+      res.writeHead(200, undefined, {
+        'Content-Type': contentType,
       })
-      sendContentType = targetFormat
+      await cacheLocker.unlock()
+      return data.pipe(res)
     }
+
+    const sendContentType = targetFormat
+    const transformer = optimizeImage({
+      contentType: targetFormat,
+      width: params.width,
+      height: params.height,
+      quality: params.quality,
+    })
+
+    data.pipe(transformer)
     if (!cached) {
+      const responseStream = transformer.pipe(new PassThrough())
       logger.info(
         `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
       )
@@ -158,9 +167,10 @@ router.get('/', async (req, res) => {
         'Cache-Control': 'public, max-age=31536000, must-revalidate',
         'x-image-cache': 'MISS',
       })
-      res.end(buffer)
+      responseStream.pipe(res)
     }
-    await cache.set(buffer)
+    const cacheStream = transformer.pipe(new PassThrough())
+    await cache.set(cacheStream)
     logger.info(
       `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )

@@ -92,7 +92,6 @@ router.get('/', async (req, res) => {
   } else if (cache && revalidate) {
     // Cache hit and revalidate but has a running task
     if (await cacheLocker.isLocked()) {
-      console.log('locked')
       return
     }
   } else {

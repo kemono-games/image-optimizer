@@ -26,7 +26,6 @@ export class Cache {
     this.cacheLocker = new Locker(params)
   }
   get = async (): Promise<[null] | [ReadStream, boolean]> => {
-    if (await this.cacheLocker.isLocked()) return [null]
     const cached = await redisClient.hgetall(this.key)
     const { timestamp, file } = cached
     if (!timestamp || !file) return [null]

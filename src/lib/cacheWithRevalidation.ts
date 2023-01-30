@@ -13,7 +13,10 @@ type CacheStatus = 'hit' | 'miss' | 'revalidate'
 export const cacheWithRevalidation = async (options: {
   cacheKey: any
   revalidate: () => Promise<[string] | [null, PassThrough]>
-  callback: (cacheStatus: CacheStatus, data: ReadStream | PassThrough) => void
+  callback: (
+    cacheStatus: CacheStatus,
+    data: ReadStream | PassThrough,
+  ) => Promise<void>
 }) => {
   const { cacheKey, revalidate, callback } = options
   const cacheLocker = new Locker(cacheKey)
@@ -43,8 +46,8 @@ export const cacheWithRevalidation = async (options: {
     return callback('hit', cached)
   } else if (cached && needRevalidate) {
     // Cache hit and revalidate but has a running task
-    update()
-    return callback('revalidate', cached)
+    await callback('revalidate', cached)
+    return update()
   } else {
     // Cache miss but has a running task
     update()

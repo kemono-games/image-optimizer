@@ -88,19 +88,21 @@ router.get('/', async (req, res) => {
         const stream = transformer.pipe(new PassThrough())
         return [null, stream]
       },
-      callback: (cacheStatus, data) => {
-        res.writeHead(200, {
-          'Content-Type': targetFormat,
-          'Cache-Control': 'public, max-age=31536000, must-revalidate',
-          'x-image-cache': cacheStatus.toUpperCase(),
-        })
-        logger.info(
-          `[${cacheStatus.toUpperCase()}] ${params.url}, W:${params.width}, H:${
-            params.height
-          }, Q:${params.quality}, ${targetFormat}`,
-        )
-        data.pipe(res)
-      },
+      callback: (cacheStatus, data) =>
+        new Promise<void>((resolve) => {
+          res.writeHead(200, {
+            'Content-Type': targetFormat,
+            'Cache-Control': 'public, max-age=31536000, must-revalidate',
+            'x-image-cache': cacheStatus.toUpperCase(),
+          })
+          logger.info(
+            `[${cacheStatus.toUpperCase()}] ${params.url}, W:${
+              params.width
+            }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+          )
+          data.pipe(res)
+          data.on('end', resolve)
+        }),
     })
   } catch (err) {
     logger.error(

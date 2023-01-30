@@ -61,6 +61,7 @@ export class Cache {
           },
         )
         try {
+          const prevCached = await redisClient.hgetall(this.key)
           await Promise.all([
             redisClient.hset(this.key, {
               file: fileHash,
@@ -69,6 +70,9 @@ export class Cache {
             fsPromise.writeFile(getCacheFilePath(fileHash), data),
           ])
           resolve()
+          if (prevCached && prevCached.file && prevCached.file !== fileHash) {
+            fs.unlink(getCacheFilePath(prevCached.file), () => undefined)
+          }
         } catch (err) {
           logger.error('Error while create image cache: ', err)
           reject(err)

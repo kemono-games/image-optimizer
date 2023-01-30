@@ -9,6 +9,7 @@ import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import { CachaParams } from '@/types'
 
+import { Locker } from './locker'
 import redisClient from './redis'
 
 const logger = Logger.get('cache')
@@ -18,10 +19,14 @@ const getCacheFilePath = (hash: string) => {
 
 export class Cache {
   private key: string
+  private cacheLocker: Locker
+
   constructor(params: CachaParams) {
     this.key = `image_cache:${hash(params)}`
+    this.cacheLocker = new Locker(params)
   }
   get = async (): Promise<[null] | [ReadStream, boolean]> => {
+    if (await this.cacheLocker.isLocked()) return [null]
     const cached = await redisClient.hgetall(this.key)
     const { timestamp, file } = cached
     if (!timestamp || !file) return [null]

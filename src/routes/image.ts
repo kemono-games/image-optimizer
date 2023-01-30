@@ -106,8 +106,10 @@ router.get('/', async (req, res) => {
     logger.error(
       `${err.message} ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
-    res.writeHead(500)
-    return res.end('Internal server error')
+    if (!res.headersSent) {
+      res.writeHead(500)
+      res.end('Internal server error')
+    }
   }
 })
 

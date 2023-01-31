@@ -6,6 +6,7 @@ on:
       - master
 jobs:
   build:
+    environment: production
     concurrency:
       group: build-${{ github.ref }}
       cancel-in-progress: true
@@ -31,6 +32,7 @@ jobs:
           file: Dockerfile
 
   deploy:
+    environment: production
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false

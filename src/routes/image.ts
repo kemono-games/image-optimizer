@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { pipe } from 'fp-ts/lib/function'
+import fs from 'fs'
 import { NumberFromString } from 'io-ts-types'
 import { PassThrough } from 'node:stream'
 
@@ -88,7 +89,7 @@ router.get('/', async (req, res) => {
         const stream = transformer.pipe(new PassThrough())
         return [null, stream]
       },
-      callback: (cacheStatus, data) =>
+      callback: (cacheStatus, cachePath) =>
         new Promise<void>((resolve) => {
           res.writeHead(200, {
             'Content-Type': targetFormat,
@@ -100,6 +101,7 @@ router.get('/', async (req, res) => {
               params.width
             }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
           )
+          const data = fs.createReadStream(cachePath)
           data.pipe(res)
           data.on('end', resolve)
         }),

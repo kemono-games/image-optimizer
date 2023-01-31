@@ -1,4 +1,3 @@
-import { ReadStream } from 'fs'
 import { PassThrough } from 'stream'
 
 import Logger from '@/lib/logger'
@@ -13,10 +12,7 @@ type CacheStatus = 'hit' | 'miss' | 'revalidate'
 export const cacheWithRevalidation = async (options: {
   cacheKey: any
   revalidate: () => Promise<[string] | [null, PassThrough]>
-  callback: (
-    cacheStatus: CacheStatus,
-    data: ReadStream | PassThrough,
-  ) => Promise<void>
+  callback: (cacheStatus: CacheStatus, cachePath: string) => Promise<void>
 }) => {
   const { cacheKey, revalidate, callback } = options
   const cacheLocker = new Locker(cacheKey)

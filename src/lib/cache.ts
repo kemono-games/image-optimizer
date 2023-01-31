@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import fs, { ReadStream } from 'fs'
+import fs from 'fs'
 import fsPromise from 'fs/promises'
 import hash from 'object-hash'
 import path from 'path'
@@ -25,7 +25,7 @@ export class Cache {
     this.key = `image_cache:${hash(params)}`
     this.cacheLocker = new Locker(params)
   }
-  get = async (): Promise<[null] | [ReadStream, boolean]> => {
+  get = async (): Promise<[null] | [string, boolean]> => {
     const cached = await redisClient.hgetall(this.key)
     const { timestamp, file } = cached
     if (!timestamp || !file) return [null]
@@ -40,7 +40,7 @@ export class Cache {
       redisClient.del(this.key)
       return [null]
     }
-    return [fs.createReadStream(getCacheFilePath(file)), revalidate]
+    return [getCacheFilePath(file), revalidate]
   }
 
   set = (data: PassThrough) =>

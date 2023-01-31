@@ -13,7 +13,10 @@ export function optimizeImage({
   width?: number
   height?: number
 }) {
-  const transformer = sharp()
+  const transformer = sharp({
+    pages: 1,
+    page: 2,
+  })
 
   transformer.rotate()
 

@@ -1,5 +1,7 @@
 # Image Optimizer
 
+Demo: https://kemono.games
+
 It provides an API to receive these parameters：
 
 1. URL of image

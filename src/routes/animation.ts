@@ -119,6 +119,7 @@ router.get('/', async (req, res) => {
       revalidate: revalidate(videoUrl.toString(), format),
       callback: (cacheStatus, cachePath) =>
         new Promise<void>((resolve) => {
+          logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)
           const stat = fs.statSync(cachePath)
           const range = req.range(stat.size)
 
@@ -147,7 +148,6 @@ router.get('/', async (req, res) => {
             retrievedLength = stat.size
           }
 
-          console.log(range, retrievedLength, stat.size, options)
           res.setHeader('Content-Length', retrievedLength)
           res.setHeader('Content-Type', `video/${format}`)
           res.setHeader(
@@ -161,7 +161,6 @@ router.get('/', async (req, res) => {
             )
             res.setHeader('Accept-Ranges', 'bytes')
           }
-          logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)
           const data = fs.createReadStream(cachePath, options)
           data.pipe(res)
           data.on('end', resolve)

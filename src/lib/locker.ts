@@ -11,7 +11,7 @@ export class Locker {
   }
 
   lock = async () => {
-    await redisClient.setex(this.key, 10, '1')
+    await redisClient.setex(this.key, 120, '1')
   }
 
   unlock = async () => {

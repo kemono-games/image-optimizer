@@ -1,29 +1,18 @@
-import axios from 'axios'
 import { Router } from 'express'
 import { pipe } from 'fp-ts/lib/function'
+import fs from 'fs'
 import { NumberFromString } from 'io-ts-types'
-import { ReadStream } from 'node:fs'
+import { PassThrough } from 'node:stream'
 
 import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
-import { Cache } from '@/lib/cache'
+import { cacheWithRevalidation } from '@/lib/cacheWithRevalidation'
 import { config } from '@/lib/config'
 import { D, O } from '@/lib/fp'
-import { Locker } from '@/lib/locker'
+import http from '@/lib/http'
 import Logger from '@/lib/logger'
 import { optimizeImage } from '@/lib/optimizer'
-import { delay } from '@/lib/utils'
-
-import pkg from '../../package.json'
 
 const logger = Logger.get('image optimize')
-const client = axios.create({
-  headers: {
-    'User-Agent': `Image Optimizer/${pkg.version}}`,
-    'Accept-Encoding': 'br;q=1.0, gzip;q=0.8, *;q=0.1',
-  },
-  responseType: 'arraybuffer',
-  timeout: 10000,
-})
 
 export const paramsDecoder = (params: any) => ({
   url: pipe(D.string.decode(params.url), O.fromEither, O.toUndefined),
@@ -69,107 +58,62 @@ router.get('/', async (req, res) => {
       .filter((e) => supportedTargetFormats.includes(e)) ?? []
   const targetFormat = acceptFormats[0] ?? 'image/jpeg'
 
-  const cacheLocker = new Locker({ ...params, targetFormat })
-  const cache = new Cache({ ...params, targetFormat })
+  const cacheKey = { ...params, targetFormat }
 
-  const [cached, revalidate] = await cache.get()
-  if (cached) {
-    logger.info(
-      `[Hit] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-    )
-    res.writeHead(200, {
-      'Content-Type': targetFormat,
-      'Cache-Control': 'public, max-age=31536000, must-revalidate',
-      'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
-    })
-    cached.pipe(res)
-  }
-
-  if (cached && !revalidate) {
-    // Cache hit and not revalidate
-    return
-  } else if (cache && revalidate) {
-    // Cache hit and revalidate
-    if (await cacheLocker.isLocked()) {
-      return
-    }
-  } else {
-    // Cache miss
-    if (await cacheLocker.isLocked()) {
-      let cached: ReadStream | null = null
-      while (!cached) {
-        await delay(100)
-        const [res] = await cache.get()
-        cached = res
-      }
-      res.writeHead(200, {
-        'Content-Type': targetFormat,
-        'Cache-Control': 'public, max-age=31536000, must-revalidate',
-        'x-image-cache': revalidate ? 'REVALIDATED' : 'HIT',
-      })
-      logger.info(
-        `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-      )
-      return cached.pipe(res)
-    }
-  }
-
-  if (revalidate) {
-    logger.info(
-      `[Revalidating] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-    )
-  }
-
-  await cacheLocker.lock()
   try {
-    const { data, headers: imageHeaders } = await client.get(
-      config.urlParser(imageUrl.toString()),
-    )
-    const contentType = imageHeaders['content-type']
-    if (!contentType || !supportedFormats.includes(contentType)) {
-      await cacheLocker.unlock()
-      res.writeHead(400, {
-        'Content-Type': 'plain/text',
-      })
-      return res.end('Unsupported format')
-    }
+    await cacheWithRevalidation({
+      cacheKey,
+      revalidate: async () => {
+        const { data, headers: imageHeaders } = await http.get(
+          config.urlParser(imageUrl.toString()),
+          {
+            responseType: 'stream',
+          },
+        )
+        const contentType = imageHeaders['content-type']
+        if (!contentType || !supportedFormats.includes(contentType)) {
+          return ['Unsupported format']
+        }
 
-    let buffer: Buffer
-    let sendContentType: string
-    if (returnOriginalFormats.includes(contentType)) {
-      buffer = data
-      sendContentType = contentType
-    } else {
-      buffer = await optimizeImage({
-        data,
-        contentType: targetFormat,
-        width: params.width,
-        height: params.height,
-        quality: params.quality,
-      })
-      sendContentType = targetFormat
-    }
-    if (!cached) {
-      logger.info(
-        `[Miss] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-      )
-      res.writeHead(200, {
-        'Content-Type': sendContentType,
-        'Cache-Control': 'public, max-age=31536000, must-revalidate',
-        'x-image-cache': 'MISS',
-      })
-      res.end(buffer)
-    }
-    await cache.set(buffer)
-    logger.info(
-      `[Updated] ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
-    )
+        if (returnOriginalFormats.includes(contentType)) {
+          return [null, data]
+        }
+
+        const transformer = optimizeImage({
+          contentType: targetFormat,
+          width: params.width,
+          height: params.height,
+          quality: params.quality,
+        })
+        data.pipe(transformer)
+        const stream = transformer.pipe(new PassThrough())
+        return [null, stream]
+      },
+      callback: (cacheStatus, cachePath) =>
+        new Promise<void>((resolve) => {
+          res.writeHead(200, {
+            'Content-Type': targetFormat,
+            'Cache-Control': 'public, max-age=31536000, must-revalidate',
+            'x-image-cache': cacheStatus.toUpperCase(),
+          })
+          logger.info(
+            `[${cacheStatus.toUpperCase()}] ${params.url}, W:${
+              params.width
+            }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
+          )
+          const data = fs.createReadStream(cachePath)
+          data.pipe(res)
+          data.on('end', resolve)
+        }),
+    })
   } catch (err) {
     logger.error(
       `${err.message} ${params.url}, W:${params.width}, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
     )
-  } finally {
-    await cacheLocker.unlock()
+    if (!res.headersSent) {
+      res.writeHead(500)
+      res.end('Internal server error')
+    }
   }
 })
 

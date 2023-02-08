@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 import { config } from './lib/config'
+import animationRouter from './routes/animation'
 import imageRouter from './routes/image'
 
 const logger = Logger.get('express')
@@ -39,6 +40,7 @@ app.use(express.urlencoded({ extended: false }))
 
 app.head('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)
+app.use('/animation', animationRouter)
 
 if (config.sentryDsn) {
   app.use(Sentry.Handlers.errorHandler())

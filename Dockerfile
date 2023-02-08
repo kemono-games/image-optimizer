@@ -13,6 +13,7 @@ COPY . ./
 RUN yarn build
 
 FROM node:18-alpine AS runner
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
@@ -20,6 +21,8 @@ COPY package.json yarn.lock* ./
 COPY optimizer.config.example.js ./optimizer.config.example.js
 RUN cp optimizer.config.example.js optimizer.config.js
 
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV FFPROBE_PATH=/usr/bin/ffprobe
 ENV NODE_ENV production
 ENV PORT 3100
 

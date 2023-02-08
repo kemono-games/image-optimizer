@@ -1,14 +1,14 @@
-name: Build
+name: Build Dev
 on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - dev
 jobs:
   build:
-    environment: production
+    environment: staging
     concurrency:
-      group: build-${{ github.ref }}
+      group: build-dev-${{ github.ref }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
@@ -28,11 +28,11 @@ jobs:
         with:
           push: true
           context: .
-          tags: registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
+          tags: registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:dev-${{ env.SHA }}
           file: Dockerfile
 
   deploy:
-    environment: production
+    environment: staging
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false
@@ -43,18 +43,18 @@ jobs:
       - name: Deploy Global
         run: |
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          cp deploy/docker-compose.sample.yml /tmp/docker-compose-${GIT_HASH}.yml
+          cp deploy/docker-compose.staging.yml /tmp/docker-compose-${GIT_HASH}.yml
           sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-${GIT_HASH}.yml
           echo "${{ vars.OPTIMIZER_CONFIG_JS }}" > /tmp/optimizer-config-${GIT_HASH}.js
 
           SERVER=("web01" "web02")
-          parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-          parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-          parallel scp /tmp/optimizer-config-${GIT_HASH}.js {}.jp.internal.abo.network:/root/image-optimizer/optimizer.config.js ::: "${SERVER[@]}"
-          parallel "ssh {}.jp.internal.abo.network 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+          parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer-staging'" ::: "${SERVER[@]}"
+          parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer-staging/docker-compose.yml ::: "${SERVER[@]}"
+          parallel scp /tmp/optimizer-config-${GIT_HASH}.js {}.jp.internal.abo.network:/root/image-optimizer-staging/optimizer.config.js ::: "${SERVER[@]}"
+          parallel "ssh {}.jp.internal.abo.network 'cd /root/image-optimizer-staging && docker compose up -d'" ::: "${SERVER[@]}"
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_USERNAME: 'GitHub Actions'
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_MESSAGE: 'image-optimizer 已部署'
+          SLACK_MESSAGE: 'image-optimizer-staging 已部署'

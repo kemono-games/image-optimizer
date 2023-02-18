@@ -53,9 +53,9 @@ This way content creators don't have to worry about the size of the images while
 
 **Con: Must use CDN which support custom cache key. The `Accept` header must be added to the cache key in order to work properly. This will also affect the hit rate of the Edge Cache. For example, CloudFront.**
 
-# Usage
+## Usage
 
-## For images:
+### For images:
 
 Endpoint: `/image`
 
@@ -68,7 +68,7 @@ h: Output height (optional)
 format: jpg | png | webp
 ```
 
-## For animations:
+### For animations:
 
 Endpoint: `/animation`
 

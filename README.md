@@ -52,3 +52,29 @@ Like this:
 This way content creators don't have to worry about the size of the images while providing the user with an optimal experience (reduce LCP etc.).
 
 **Con: Must use CDN which support custom cache key. The `Accept` header must be added to the cache key in order to work properly. This will also affect the hit rate of the Edge Cache. For example, CloudFront.**
+
+# Usage
+
+## For images:
+
+Endpoint: `/image`
+
+Query:
+
+```
+url: Image url
+w: Output width
+h: Output height (optional)
+format: jpg | png | webp
+```
+
+## For animations:
+
+Endpoint: `/animation`
+
+Query:
+
+```
+url: Animated image url
+format: mp4 | webm
+```

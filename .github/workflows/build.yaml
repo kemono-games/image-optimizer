@@ -36,7 +36,9 @@ jobs:
           context: .
           tags: |
             registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
+            registry.ap-northeast-1.aliyuncs.com/kemono/image-optimizer:latest
             registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
+            registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:latest
           file: Dockerfile
 
   deploy:

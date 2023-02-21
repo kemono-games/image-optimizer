@@ -68,3 +68,31 @@ jobs:
           SLACK_USERNAME: 'GitHub Actions'
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_MESSAGE: 'image-optimizer 已部署'
+
+  deploy-cn:
+    environment: cn
+    concurrency:
+      group: deploy-cn-${{ github.ref }}
+      cancel-in-progress: false
+    needs: [build]
+    runs-on: [self-hosted, docker]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy Global
+        run: |
+          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
+          cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
+          sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
+          echo "${{ vars.OPTIMIZER_CONFIG_JS }}" > /tmp/optimizer-config-cn-${GIT_HASH}.js
+
+          SERVER=("web-sz01" "web-sz02")
+          parallel "ssh {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
+          parallel scp /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
+          parallel scp /tmp/optimizer-config-cn-${GIT_HASH}.js {}:/root/image-optimizer/optimizer.config.js ::: "${SERVER[@]}"
+          parallel "ssh {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_USERNAME: 'GitHub Actions'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: 'image-optimizer-cn 已部署'

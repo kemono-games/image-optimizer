@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  image-optimizer:
+    image: registry-vpc.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-{{GIT-SHA}}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+    ports:
+      - 8150:3000
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      - PORT=3000
+    volumes:
+      - /mnt/disk/image-cache/cache:/app/cache
+      - ./optimizer.config.js:/app/optimizer.config.js

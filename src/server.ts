@@ -38,7 +38,7 @@ app.use(
 )
 app.use(express.urlencoded({ extended: false }))
 
-app.head('/health', (_, res) => res.send('ok'))
+app.all('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)
 app.use('/animation', animationRouter)
 

@@ -1,6 +1,5 @@
-#!/bin/bash
+#!/bin/sh
 
-cd /app
 if [ -z "$OPTIMIZER_CONFIG_JS" ]; then
   echo "Environment variable OPTIMIZER_CONFIG_JS is not set. Skipping file generation."
 else

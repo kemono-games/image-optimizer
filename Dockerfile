@@ -28,4 +28,4 @@ ENV PORT 3100
 
 EXPOSE 3100
 
-CMD ["bootstrap.sh"]
+ENTRYPOINT ["bootstrap.sh"]

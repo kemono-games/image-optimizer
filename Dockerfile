@@ -17,7 +17,7 @@ RUN apk add --no-cache ffmpeg
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY package.json yarn.lock* ./
+COPY package.json yarn.lock* bootstrap.sh ./
 COPY optimizer.config.example.js ./optimizer.config.example.js
 RUN cp optimizer.config.example.js optimizer.config.js
 

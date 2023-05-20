@@ -2,6 +2,14 @@
 
 Demo: https://kemono.games
 
+## Example
+
+[Static Image](https://img-opti.srkyxk.com/image?url=https%3A%2F%2Fimg.srkyxk.com%2Fimages%2Fc6%2Fa2%2F03b3860b5273c2c9753cd66f9cc6d6e7d0e1&w=480&q=75) | 
+[GIF 1st Frame](https://img-opti.srkyxk.com/image?url=https://img.srkyxk.com/images/91/8d/0e7232c5938601c72b5215e3b77ba2c3d3fa&w=640&q=75) | 
+[GIF to MP4](https://img-opti.srkyxk.com/animation?url=https%3A%2F%2Fimg.srkyxk.com%2Fimages%2F91%2F8d%2F0e7232c5938601c72b5215e3b77ba2c3d3fa&format=mp4) | 
+[GIF to WEBM](https://img-opti.srkyxk.com/animation?url=https%3A%2F%2Fimg.srkyxk.com%2Fimages%2F91%2F8d%2F0e7232c5938601c72b5215e3b77ba2c3d3fa&format=webm)
+
+---
 It provides an API to receive these parameters：
 
 1. URL of image

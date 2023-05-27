@@ -55,7 +55,7 @@ jobs:
           unzip fcli.zip
           sudo mv fcli /usr/local/bin/
 
-        name: Update image version
+      - name: Update image version
         env:
           ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
           ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}

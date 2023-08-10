@@ -70,7 +70,9 @@ jobs:
           ALIBABA_CLOUD_DEFAULT_REGION: ap-southeast-1
           ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
           SHA: ${{ env.SHA }}
-        run: fcli function update -f img-opti -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-$SHA
+        run: |
+          fcli function update -f img-opti -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-$SHA
+          fcli function update -f img-opti-clean -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-$SHA
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
@@ -104,7 +106,9 @@ jobs:
           ALIBABA_CLOUD_DEFAULT_REGION: cn-shenzhen
           ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
           SHA: ${{ env.SHA }}
-        run: fcli function update -f img-opti -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA
+        run: |
+          fcli function update -f img-opti -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA
+          fcli function update -f img-opti-clean -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

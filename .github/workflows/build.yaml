@@ -46,7 +46,7 @@ jobs:
           file: Dockerfile
 
   deploy:
-    environment: staging
+    environment: production
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false
@@ -83,7 +83,7 @@ jobs:
           SLACK_MESSAGE: 'image-optimizer 已部署'
 
   deploy-cn:
-    environment: staging
+    environment: production
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false

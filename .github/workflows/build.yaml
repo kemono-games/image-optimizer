@@ -47,9 +47,6 @@ jobs:
 
   deploy:
     environment: production
-    concurrency:
-      group: deploy-${{ github.ref }}
-      cancel-in-progress: false
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -84,9 +81,6 @@ jobs:
 
   deploy-cn:
     environment: production
-    concurrency:
-      group: deploy-${{ github.ref }}
-      cancel-in-progress: false
     needs: [build]
     runs-on: ubuntu-latest
     steps:

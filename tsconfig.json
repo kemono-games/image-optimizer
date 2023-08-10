@@ -24,6 +24,6 @@
       "@/*": ["*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.json", ".env"],
+  "include": ["**/*.ts", "src/**/*.json", ".env"],
   "exclude": ["node_modules"]
 }

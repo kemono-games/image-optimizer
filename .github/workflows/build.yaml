@@ -46,27 +46,35 @@ jobs:
           file: Dockerfile
 
   deploy:
-    environment: production
+    environment: staging
     concurrency:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false
     needs: [build]
-    runs-on: [self-hosted, docker]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Deploy Global
-        run: |
-          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          cp deploy/docker-compose.sample.yml /tmp/docker-compose-${GIT_HASH}.yml
-          sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-${GIT_HASH}.yml
-          echo "${{ vars.OPTIMIZER_CONFIG_JS }}" > /tmp/optimizer-config-${GIT_HASH}.js
+      - uses: benjlevesque/short-sha@v2.1
+        id: short-sha
+        with:
+          length: 7
 
-          SERVER=("web01" "web02")
-          parallel "ssh {}.jp.internal.abo.network 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-          parallel scp /tmp/docker-compose-${GIT_HASH}.yml {}.jp.internal.abo.network:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-          parallel scp /tmp/optimizer-config-${GIT_HASH}.js {}.jp.internal.abo.network:/root/image-optimizer/optimizer.config.js ::: "${SERVER[@]}"
-          parallel "ssh {}.jp.internal.abo.network 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+      - name: Install fcli
+        run: |
+          curl -o fcli.zip https://gosspublic.alicdn.com/fcli/fcli-v1.0.4-linux-amd64.zip
+          unzip fcli.zip
+          sudo mv fcli /usr/local/bin/
+
+      - name: Update image version
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+          ALIBABA_CLOUD_DEFAULT_REGION: ap-southeast-1
+          ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
+          SHA: ${{ env.SHA }}
+        run: fcli function update -f img-opti -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:dev-$SHA
+
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
@@ -75,26 +83,35 @@ jobs:
           SLACK_MESSAGE: 'image-optimizer 已部署'
 
   deploy-cn:
-    environment: cn
+    environment: staging
     concurrency:
-      group: deploy-cn-${{ github.ref }}
+      group: deploy-${{ github.ref }}
       cancel-in-progress: false
     needs: [build]
-    runs-on: [self-hosted, docker]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy Global
-        run: |
-          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
-          sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
-          echo "${{ vars.OPTIMIZER_CONFIG_JS }}" > /tmp/optimizer-config-cn-${GIT_HASH}.js
 
-          SERVER=("web-sz01" "web-sz02")
-          parallel "ssh {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-          parallel scp /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-          parallel scp /tmp/optimizer-config-cn-${GIT_HASH}.js {}:/root/image-optimizer/optimizer.config.js ::: "${SERVER[@]}"
-          parallel "ssh {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+      - uses: benjlevesque/short-sha@v2.1
+        id: short-sha
+        with:
+          length: 7
+
+      - name: Install fcli
+        run: |
+          curl -o fcli.zip https://gosspublic.alicdn.com/fcli/fcli-v1.0.4-linux-amd64.zip
+          unzip fcli.zip
+          sudo mv fcli /usr/local/bin/
+
+      - name: Update image version
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+          ALIBABA_CLOUD_DEFAULT_REGION: cn-shenzhen
+          ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
+          SHA: ${{ env.SHA }}
+        run: fcli function update -f img-opti -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:main-$SHA
+
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:

@@ -15,9 +15,6 @@ module.exports = {
     db: 0,
     // password: '123456',
   },
-  revalidate: 300,
-  ttl: 24 * 60 * 60,
-  cleanSchedule: '0 2 * * *',
   urlParser: (url) => url,
   log: {
     accessLog: 'stdout',

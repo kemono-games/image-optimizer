@@ -5,30 +5,59 @@ import { NumberFromString } from 'io-ts-types'
 import { PassThrough } from 'node:stream'
 
 import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
-import { cacheWithRevalidation } from '@/lib/cacheWithRevalidation'
+import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
-import { D, O } from '@/lib/fp'
+import { D, E, O } from '@/lib/fp'
 import http from '@/lib/http'
 import Logger from '@/lib/logger'
 import { optimizeImage } from '@/lib/optimizer'
 
 const logger = Logger.get('image optimize')
 
-export const paramsDecoder = (params: any) => ({
-  url: pipe(D.string.decode(params.url), O.fromEither, O.toUndefined),
-  width: pipe(NumberFromString.decode(params.w), O.fromEither, O.toUndefined),
-  height: pipe(NumberFromString.decode(params.h), O.fromEither, O.toUndefined),
-  quality: pipe(
-    NumberFromString.decode(params.q),
-    O.fromEither,
-    O.getOrElse(() => 75),
-  ),
-})
+const paramsDecoder = (params: any) =>
+  pipe(
+    pipe(
+      D.struct({
+        url: D.string,
+      }),
+      D.intersect(
+        D.partial({
+          w: D.string,
+          h: D.string,
+          q: D.string,
+        }),
+      ),
+    ).decode(params),
+    E.map((params) => ({
+      url: pipe(O.some(params.url), O.toUndefined),
+      width: pipe(
+        NumberFromString.decode(params.w),
+        O.fromEither,
+        O.toUndefined,
+      ),
+      height: pipe(
+        NumberFromString.decode(params.h),
+        O.fromEither,
+        O.toUndefined,
+      ),
+      quality: pipe(
+        NumberFromString.decode(params.q),
+        O.fromEither,
+        O.getOrElse(() => 75),
+      ),
+    })),
+  )
 
 const router = Router()
 router.get('/', async (req, res) => {
   const { query, headers } = req
-  const params = paramsDecoder(query)
+  const _resp = paramsDecoder(query)
+  if (E.isLeft(_resp)) {
+    res.writeHead(400)
+    return res.end('Bad Input')
+  }
+  const params = _resp.right
+
   if (!params.url) {
     res.writeHead(400)
     return res.end('Missing url parameter')
@@ -61,9 +90,9 @@ router.get('/', async (req, res) => {
   const cacheKey = { ...params, targetFormat }
 
   try {
-    await cacheWithRevalidation({
+    await getWithCache({
       cacheKey,
-      revalidate: async () => {
+      async fetcher() {
         const { data, headers: imageHeaders } = await http.get(
           config.urlParser(imageUrl.toString()),
           {
@@ -89,12 +118,13 @@ router.get('/', async (req, res) => {
         const stream = transformer.pipe(new PassThrough())
         return [null, stream]
       },
-      callback: (cacheStatus, cachePath) =>
-        new Promise<void>((resolve) => {
+      callback(cacheStatus, cachePath, age) {
+        return new Promise<void>((resolve) => {
           res.writeHead(200, {
             'Content-Type': targetFormat,
             'Cache-Control': 'public, max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
+            age: `${age}`,
           })
           logger.info(
             `[${cacheStatus.toUpperCase()}] ${params.url}, W:${
@@ -103,8 +133,12 @@ router.get('/', async (req, res) => {
           )
           const data = fs.createReadStream(cachePath)
           data.pipe(res)
-          data.on('end', resolve)
-        }),
+          data.on('end', () => {
+            res.end()
+            resolve()
+          })
+        })
+      },
     })
   } catch (err) {
     logger.error(

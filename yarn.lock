@@ -2619,7 +2619,6 @@ __metadata:
     monocle-ts: "npm:^2.3.13"
     morgan: "npm:^1.10.0"
     newtype-ts: "npm:^0.3.5"
-    node-cron: "npm:^3.0.2"
     nodemon: "npm:^2.0.19"
     object-hash: "npm:^3.0.0"
     prettier: "npm:^2.8.3"
@@ -3387,15 +3386,6 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: d2699c4ad15740fd31482a3b6fca789af7723ab9d393adc6ac45250faaee72edad8f0b10b2b9d087df0de93f1bdc16d97afdd179b26b9ebc9ed68b569faa4bac
-  languageName: node
-  linkType: hard
-
-"node-cron@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "node-cron@npm:3.0.2"
-  dependencies:
-    uuid: "npm:8.3.2"
-  checksum: 9b67d817ec5cb373a7b5676b5984b1c9624b40765d939cb3e7072f5c7ed6133100cf90824118ddc87edc25b632d4457b3843384cbf323a35562634b0a8343c05
   languageName: node
   linkType: hard
 
@@ -4918,15 +4908,6 @@ __metadata:
   version: 1.0.1
   resolution: "utils-merge@npm:1.0.1"
   checksum: 02ba649de1b7ca8854bfe20a82f1dfbdda3fb57a22ab4a8972a63a34553cf7aa51bc9081cf7e001b035b88186d23689d69e71b510e610a09a4c66f68aa95b672
-  languageName: node
-  linkType: hard
-
-"uuid@npm:8.3.2":
-  version: 8.3.2
-  resolution: "uuid@npm:8.3.2"
-  bin:
-    uuid: dist/bin/uuid
-  checksum: bcbb807a917d374a49f475fae2e87fdca7da5e5530820ef53f65ba1d12131bd81a92ecf259cc7ce317cbe0f289e7d79fdfebcef9bfa3087c8c8a2fa304c9be54
   languageName: node
   linkType: hard
 

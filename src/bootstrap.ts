@@ -11,4 +11,3 @@ if (!fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
 }
 
 require('./server')
-require('./task')

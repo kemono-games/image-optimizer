@@ -2,11 +2,11 @@ import express from 'express'
 import fs from 'fs'
 import morgan from 'morgan'
 
+import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
-import { config } from './lib/config'
 import animationRouter from './routes/animation'
 import imageRouter from './routes/image'
 

@@ -11,6 +11,7 @@ import { CachaParams } from '@/types'
 
 import { Locker } from './locker'
 import redisClient from './redis'
+import { delay } from './utils'
 
 const logger = Logger.get('cache')
 const getCacheFilePath = (hash: string) => {
@@ -25,22 +26,11 @@ export class Cache {
     this.key = `image_cache:${hash(params)}`
     this.cacheLocker = new Locker(params)
   }
-  get = async (): Promise<[null] | [string, boolean]> => {
+  get = async (): Promise<[null] | [string, number]> => {
     const cached = await redisClient.hgetall(this.key)
-    const { timestamp, file } = cached
-    if (!timestamp || !file) return [null]
-    if (Date.now() - parseInt(timestamp) > config.ttl * 1000) {
-      redisClient.del(this.key)
-      fs.unlink(getCacheFilePath(file), () => undefined)
-      return [null]
-    }
-    const revalidate =
-      Date.now() - parseInt(timestamp) > config.revalidate * 1000
-    if (!fs.existsSync(getCacheFilePath(file))) {
-      redisClient.del(this.key)
-      return [null]
-    }
-    return [getCacheFilePath(file), revalidate]
+    const { file, timestamp } = cached
+    if (!file) return [null]
+    return [getCacheFilePath(file), Date.now() - parseInt(timestamp)]
   }
 
   set = (data: PassThrough) =>
@@ -61,7 +51,6 @@ export class Cache {
           },
         )
         try {
-          const prevCached = await redisClient.hgetall(this.key)
           await Promise.all([
             redisClient.hset(this.key, {
               file: fileHash,
@@ -70,9 +59,6 @@ export class Cache {
             fsPromise.writeFile(getCacheFilePath(fileHash), data),
           ])
           resolve()
-          if (prevCached && prevCached.file && prevCached.file !== fileHash) {
-            fs.unlink(getCacheFilePath(prevCached.file), () => undefined)
-          }
         } catch (err) {
           logger.error('Error while create image cache: ', err)
           reject(err)
@@ -81,20 +67,49 @@ export class Cache {
     })
 }
 
-export const clean = async () => {
-  logger.time('clean cache cost')
-  const keys = await redisClient.keys('image_cache:*')
-  for (const key of keys) {
-    const cached = await redisClient.hgetall(key)
-    const { timestamp, file } = cached
-    if (!timestamp || !file) {
-      redisClient.del(key)
-      continue
-    }
-    if (Date.now() - parseInt(timestamp) > config.ttl * 1000) {
-      redisClient.del(key)
-      fs.unlink(getCacheFilePath(file), (err) => logger.error(err))
+type CacheStatus = 'hit' | 'miss'
+export const getWithCache = async (options: {
+  cacheKey: any
+  fetcher: () => Promise<[string] | [null, PassThrough]>
+  callback: (
+    cacheStatus: CacheStatus,
+    cachePath: string,
+    age: number,
+  ) => Promise<void>
+}) => {
+  const { cacheKey, fetcher, callback } = options
+  const cacheLocker = new Locker(cacheKey)
+  const cache = new Cache(cacheKey)
+
+  const [cached, age] = await cache.get()
+
+  const update = async () => {
+    if (await cacheLocker.isLocked()) return
+    const start = Date.now()
+    // cache miss
+    await cacheLocker.lock()
+    try {
+      const [error, data] = await fetcher()
+      if (error) throw new Error(error)
+      await cache.set(data)
+      logger.info(`process cost: ${Date.now() - start}ms`)
+    } catch (err) {
+      throw err
+    } finally {
+      await cacheLocker.unlock()
     }
   }
-  logger.timeEnd('clean cache cost')
+
+  if (cached) {
+    // Cache hit
+    return callback('hit', cached, age)
+  } else {
+    update()
+    await delay(10)
+    while (await cacheLocker.isLocked()) {
+      await delay(10)
+    }
+    const [cached, age] = await cache.get()
+    return callback('miss', cached, age)
+  }
 }

@@ -4,7 +4,7 @@ import fs from 'fs'
 import { CreateReadStreamOptions } from 'fs/promises'
 import { PassThrough } from 'node:stream'
 
-import { cacheWithRevalidation } from '@/lib/cacheWithRevalidation'
+import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, E } from '@/lib/fp'
 import Logger from '@/lib/logger'
@@ -13,11 +13,13 @@ const logger = Logger.get('animation optimize')
 
 const router = Router()
 
+const videoTaskParamsDecoder = D.struct({
+  url: D.string,
+  format: D.literal('mp4', 'webm'),
+})
+
 const parseQuery = (query: any) => {
-  const params = D.struct({
-    url: D.string,
-    format: D.literal('mp4', 'webm'),
-  }).decode(query)
+  const params = videoTaskParamsDecoder.decode(query)
   if (E.isLeft(params)) {
     return null
   }
@@ -69,10 +71,10 @@ router.head('/', async (req, res) => {
   const cacheKey = { url, format }
 
   try {
-    await cacheWithRevalidation({
+    await getWithCache({
       cacheKey,
-      revalidate: revalidate(videoUrl.toString(), format),
-      callback: (cacheStatus, cachePath) =>
+      fetcher: revalidate(videoUrl.toString(), format),
+      callback: (cacheStatus, cachePath, age) =>
         new Promise<void>((resolve) => {
           const stat = fs.statSync(cachePath)
           res.writeHead(200, {
@@ -81,6 +83,7 @@ router.head('/', async (req, res) => {
             'Content-Type': `video/${format}`,
             'Cache-Control': 'public, max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
+            age: `${age}`,
           })
           res.end()
           logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)
@@ -114,9 +117,9 @@ router.get('/', async (req, res) => {
   const cacheKey = { url, format }
 
   try {
-    await cacheWithRevalidation({
+    await getWithCache({
       cacheKey,
-      revalidate: revalidate(videoUrl.toString(), format),
+      fetcher: revalidate(videoUrl.toString(), format),
       callback: (cacheStatus, cachePath) =>
         new Promise<void>((resolve) => {
           logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)

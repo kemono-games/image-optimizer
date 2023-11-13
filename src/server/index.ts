@@ -27,7 +27,7 @@ if (config.sentryDsn) {
   app.use(Sentry.Handlers.tracingHandler())
 }
 
-app.use(helmet())
+app.use(helmet({ contentSecurityPolicy: false }))
 app.use(
   morgan('dev', {
     ...(config.log.accessLog === 'stdout'

@@ -27,6 +27,10 @@ export class Cache {
     this.cacheLocker = new Locker(params)
   }
   get = async (): Promise<[null] | [string, number]> => {
+    while (await this.cacheLocker.isLocked()) {
+      await delay(10)
+    }
+    await this.cacheLocker.lock()
     const cached = await redisClient.hgetall(this.key)
     const { file, timestamp } = cached
     if (!file) return [null]
@@ -35,11 +39,15 @@ export class Cache {
       await redisClient.del(this.key)
       return [null]
     }
+    await this.cacheLocker.unlock()
     return [filePath, Date.now() - parseInt(timestamp)]
   }
 
   set = (data: PassThrough) =>
     new Promise<void>(async (resolve, reject) => {
+      while (await this.cacheLocker.isLocked()) {
+        await delay(10)
+      }
       await this.cacheLocker.lock()
       const bufs = []
       const cipher = crypto.createHash('sha1')

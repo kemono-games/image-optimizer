@@ -48,7 +48,7 @@ export class Cache {
       redisClient.zincrby('cache_access_count', 1, this.key),
       this.cacheLocker.unlock(),
     ])
-    return [filePath, Date.now() - parseInt(timestamp)]
+    return [filePath, Math.floor((Date.now() - parseInt(timestamp)) / 1000)]
   }
 
   set = (data: PassThrough) =>

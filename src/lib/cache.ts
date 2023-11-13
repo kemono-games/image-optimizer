@@ -20,20 +20,12 @@ const getCacheFilePath = (hash: string) => {
 
 export class Cache {
   private key: string
-  private cacheLocker: Locker
 
   constructor(params: CachaParams) {
     this.key = `image_cache:${hash(params)}`
-    this.cacheLocker = new Locker(params)
   }
   get = async (): Promise<[null] | [string, number]> => {
-    while (await this.cacheLocker.isLocked()) {
-      await delay(10)
-    }
-    const [_, cached] = await Promise.all([
-      this.cacheLocker.lock(),
-      redisClient.hgetall(this.key),
-    ])
+    const cached = await redisClient.hgetall(this.key)
     const { file, timestamp } = cached
     if (!file) return [null]
     const filePath = getCacheFilePath(file)
@@ -44,19 +36,12 @@ export class Cache {
       ])
       return [null]
     }
-    await Promise.all([
-      redisClient.zincrby('cache_access_count', 1, this.key),
-      this.cacheLocker.unlock(),
-    ])
+    await redisClient.zincrby('cache_access_count', 1, this.key)
     return [filePath, Math.floor((Date.now() - parseInt(timestamp)) / 1000)]
   }
 
   set = (data: PassThrough) =>
     new Promise<void>(async (resolve, reject) => {
-      while (await this.cacheLocker.isLocked()) {
-        await delay(10)
-      }
-      await this.cacheLocker.lock()
       const bufs = []
       const cipher = crypto.createHash('sha1')
       data.on('data', (chunk) => {
@@ -84,8 +69,6 @@ export class Cache {
         } catch (err) {
           logger.error('Error while create image cache: ', err)
           reject(err)
-        } finally {
-          await this.cacheLocker.unlock()
         }
       })
     })

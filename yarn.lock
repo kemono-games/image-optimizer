@@ -2491,6 +2491,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"helmet@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "helmet@npm:7.1.0"
+  checksum: 8c3370d07487be11ac918577c68952e05d779a1a2c037023c1ba763034c381a025899bc52f8acfab5209304a1dc618a3764dbfd26386a0d1173befe4fb932e84
+  languageName: node
+  linkType: hard
+
 "http-cache-semantics@npm:3.8.1":
   version: 3.8.1
   resolution: "http-cache-semantics@npm:3.8.1"
@@ -2612,6 +2619,7 @@ __metadata:
     express: "npm:^4.18.2"
     fluent-ffmpeg: "npm:^2.1.2"
     fp-ts: "npm:^2.13.1"
+    helmet: "npm:^7.1.0"
     io-ts: "npm:^2.2.20"
     io-ts-types: "npm:^0.5.19"
     ioredis: "npm:^5.2.5"

@@ -80,7 +80,9 @@ router.get('/', async (req, res) => {
   const { accept } = headers
   const acceptFormats =
     accept
-      ?.split(',')
+      ?.replace('jpg', 'jpeg')
+      .toLowerCase()
+      .split(',')
       .map((e) => e.split(';'))
       .flat()
       .filter((e) => e.startsWith('image/'))
@@ -100,6 +102,8 @@ router.get('/', async (req, res) => {
           },
         )
         const contentType = imageHeaders['content-type']
+          ?.replace('jpg', 'jpeg')
+          .toLowerCase()
         if (!contentType || !supportedFormats.includes(contentType)) {
           return ['Unsupported format']
         }
@@ -124,7 +128,7 @@ router.get('/', async (req, res) => {
             'Content-Type': targetFormat,
             'Cache-Control': 'public, max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
-            age: `${age}`,
+            'x-image-age': `${age}`,
           })
           logger.info(
             `[${cacheStatus.toUpperCase()}] ${params.url}, W:${

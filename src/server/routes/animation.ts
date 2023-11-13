@@ -83,7 +83,7 @@ router.head('/', async (req, res) => {
             'Content-Type': `video/${format}`,
             'Cache-Control': 'public, max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
-            age: `${age}`,
+            'x-image-age': `${age}`,
           })
           res.end()
           logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)

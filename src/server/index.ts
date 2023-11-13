@@ -1,5 +1,6 @@
 import express from 'express'
 import fs from 'fs'
+import helmet from 'helmet'
 import morgan from 'morgan'
 
 import { config } from '@/lib/config'
@@ -26,6 +27,7 @@ if (config.sentryDsn) {
   app.use(Sentry.Handlers.tracingHandler())
 }
 
+app.use(helmet({ crossOriginResourcePolicy: false }))
 app.use(
   morgan('dev', {
     ...(config.log.accessLog === 'stdout'

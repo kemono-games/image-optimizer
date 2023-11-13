@@ -30,16 +30,24 @@ export class Cache {
     while (await this.cacheLocker.isLocked()) {
       await delay(10)
     }
-    await this.cacheLocker.lock()
-    const cached = await redisClient.hgetall(this.key)
+    const [_, cached] = await Promise.all([
+      this.cacheLocker.lock(),
+      redisClient.hgetall(this.key),
+    ])
     const { file, timestamp } = cached
     if (!file) return [null]
     const filePath = getCacheFilePath(file)
     if (!fs.existsSync(filePath)) {
-      await redisClient.del(this.key)
+      await Promise.all([
+        redisClient.del(this.key),
+        redisClient.zrem('cache_access_count', this.key),
+      ])
       return [null]
     }
-    await this.cacheLocker.unlock()
+    await Promise.all([
+      redisClient.zincrby('cache_access_count', 1, this.key),
+      this.cacheLocker.unlock(),
+    ])
     return [filePath, Date.now() - parseInt(timestamp)]
   }
 

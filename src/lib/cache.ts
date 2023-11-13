@@ -30,7 +30,12 @@ export class Cache {
     const cached = await redisClient.hgetall(this.key)
     const { file, timestamp } = cached
     if (!file) return [null]
-    return [getCacheFilePath(file), Date.now() - parseInt(timestamp)]
+    const filePath = getCacheFilePath(file)
+    if (!fs.existsSync(filePath)) {
+      await redisClient.del(this.key)
+      return [null]
+    }
+    return [filePath, Date.now() - parseInt(timestamp)]
   }
 
   set = (data: PassThrough) =>

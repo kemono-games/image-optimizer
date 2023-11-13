@@ -39,7 +39,8 @@ export class Cache {
   }
 
   set = (data: PassThrough) =>
-    new Promise<void>((resolve, reject) => {
+    new Promise<void>(async (resolve, reject) => {
+      await this.cacheLocker.lock()
       const bufs = []
       const cipher = crypto.createHash('sha1')
       data.on('data', (chunk) => {
@@ -67,6 +68,8 @@ export class Cache {
         } catch (err) {
           logger.error('Error while create image cache: ', err)
           reject(err)
+        } finally {
+          await this.cacheLocker.unlock()
         }
       })
     })

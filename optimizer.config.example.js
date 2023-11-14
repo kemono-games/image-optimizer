@@ -25,5 +25,15 @@ module.exports = {
     ffmpegPath,
     ffprobePath,
   },
+  mq: {
+    type: 'mns', // cmq
+    config: {
+      queueName: '<queueName>',
+      accountId: '<accountId>',
+      keyId: '<keyId>',
+      keySecret: '<keySecret>',
+      mqRegion: '<mqRegion>',
+    },
+  },
   sentryDsn: '',
 }

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "NODE_ENV=production node dist/bootstrap.js",
     "dev": "NODE_ENV=development nodemon",
+    "dev:worker": "NODE_ENV=development ts-node --swc -r tsconfig-paths/register src/worker/test.ts",
     "build": "rm -rf dist && swc src -d dist --source-maps --copy-files",
     "cli": "ts-node -r dotenv/config -r tsconfig-paths/register -O \"{\\\"module\\\": \\\"commonjs\\\", \\\"target\\\": \\\"es2019\\\"}\" scripts/index.ts"
   },
@@ -46,6 +47,7 @@
     "js-logger": "^1.6.1",
     "monocle-ts": "^2.3.13",
     "morgan": "^1.10.0",
+    "mq-in-one": "^1.0.3",
     "newtype-ts": "^0.3.5",
     "object-hash": "^3.0.0",
     "sharp": "^0.32.6"

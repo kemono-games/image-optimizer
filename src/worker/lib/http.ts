@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import pkg from '../../package.json'
+import pkg from '../../../package.json'
 
 const http = axios.create({
   headers: {

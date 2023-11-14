@@ -1,28 +1,32 @@
 import crypto from 'crypto'
 import fs from 'fs'
 import fsPromise from 'fs/promises'
-import hash from 'object-hash'
 import path from 'path'
 import { PassThrough } from 'stream'
 
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
-import { CachaParams } from '@/types'
 
 import { Locker } from './locker'
+import { mqAddTask, MQMessage } from './mns'
 import redisClient from './redis'
 import { delay } from './utils'
 
 const logger = Logger.get('cache')
 const getCacheFilePath = (hash: string) => {
-  return path.join(config.cachePath, hash.slice(0, 2), hash.slice(2, 4), hash)
+  return path.resolve(
+    config.cachePath,
+    hash.slice(0, 2),
+    hash.slice(2, 4),
+    hash,
+  )
 }
 
 export class Cache {
   private key: string
 
-  constructor(params: CachaParams) {
-    this.key = `image_cache:${hash(params)}`
+  constructor(key: string) {
+    this.key = `image_cache:${key}`
   }
   get = async (): Promise<[null] | [string, number]> => {
     const cached = await redisClient.hgetall(this.key)
@@ -75,48 +79,40 @@ export class Cache {
 }
 
 type CacheStatus = 'hit' | 'miss'
-export const getWithCache = async (options: {
-  cacheKey: any
-  fetcher: () => Promise<[string] | [null, PassThrough]>
-  callback: (
-    cacheStatus: CacheStatus,
-    cachePath: string,
-    age: number,
-  ) => Promise<void>
-}) => {
-  const { cacheKey, fetcher, callback } = options
+export const getWithCache = async (
+  payload: MQMessage,
+): Promise<[CacheStatus, string, number]> => {
+  const cacheKey = payload.cacheKey
   const cacheLocker = new Locker(cacheKey)
   const cache = new Cache(cacheKey)
 
-  const [cached, age] = await cache.get()
-
-  const update = async () => {
-    if (await cacheLocker.isLocked()) return
-    const start = Date.now()
-    // cache miss
-    await cacheLocker.lock()
-    try {
-      const [error, data] = await fetcher()
-      if (error) throw new Error(error)
-      await cache.set(data)
-      logger.info(`process cost: ${Date.now() - start}ms`)
-    } catch (err) {
-      throw err
-    } finally {
-      await cacheLocker.unlock()
-    }
+  while (await cacheLocker.isLocked()) {
+    await delay(10)
   }
+  const [cached, age] = await cache.get()
 
   if (cached) {
     // Cache hit
-    return callback('hit', cached, age)
+    return ['hit', cached, age]
   } else {
-    update()
-    await delay(10)
+    // cache miss
+    if (!(await cacheLocker.isLocked())) {
+      // if not locked, lock it and fetch
+      await cacheLocker.lock()
+      try {
+        await mqAddTask(payload)
+        await delay(10)
+      } catch (err) {
+        await cacheLocker.unlock()
+        throw err
+      }
+    }
+
+    // wait for cache to be created
     while (await cacheLocker.isLocked()) {
       await delay(10)
     }
     const [cached, age] = await cache.get()
-    return callback('miss', cached, age)
+    return ['miss', cached, age]
   }
 }

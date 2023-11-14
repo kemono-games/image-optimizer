@@ -1,13 +1,9 @@
-import hash from 'object-hash'
-
-import { CachaParams } from '@/types'
-
 import redisClient from './redis'
 
 export class Locker {
   private key: string
-  constructor(params: CachaParams) {
-    this.key = `image_lock:${hash(params)}`
+  constructor(key: string) {
+    this.key = `image_lock:${key}`
   }
 
   lock = async () => {

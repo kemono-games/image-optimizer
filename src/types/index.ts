@@ -8,3 +8,13 @@ export type RequestParams = {
 export type CachaParams = RequestParams & {
   targetFormat: string
 }
+
+export type ImageFormat =
+  | 'jpg'
+  | 'jpeg'
+  | 'webp'
+  | 'avif'
+  | 'png'
+  | 'gif'
+  | 'svg'
+  | 'apng'

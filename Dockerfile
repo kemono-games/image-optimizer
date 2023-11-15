@@ -2,7 +2,7 @@
 FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat python3 make g++ bash 
 WORKDIR /app
-COPY package.json yarn.lock* .yarn ./
+COPY package.json yarn.lock* .yarnrc.yml .yarn ./
 RUN yarn --immutable && mv node_modules dev_node_modules
 RUN yarn --immutable --production
 

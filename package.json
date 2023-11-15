@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "NODE_ENV=production node dist/bootstrap.js",
-    "dev": "NODE_ENV=development nodemon",
+    "dev": "nodemon",
+    "dev:server": "NODE_ENV=development ts-node --swc -r tsconfig-paths/register src/bootstrap.ts",
     "dev:worker": "NODE_ENV=development ts-node --swc -r tsconfig-paths/register src/worker/test.ts",
     "build": "rm -rf dist && swc src -d dist --source-maps --copy-files",
     "cli": "ts-node -r dotenv/config -r tsconfig-paths/register -O \"{\\\"module\\\": \\\"commonjs\\\", \\\"target\\\": \\\"es2019\\\"}\" scripts/index.ts"
@@ -21,6 +22,7 @@
     "@types/object-hash": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
+    "concurrently": "^8.2.2",
     "eslint": "^8.20.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",

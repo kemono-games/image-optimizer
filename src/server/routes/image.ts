@@ -3,7 +3,11 @@ import { pipe } from 'fp-ts/lib/function'
 import { NumberFromString } from 'io-ts-types'
 import hash from 'object-hash'
 
-import { formatToMimeMap, mimeToFormatMap, supportedTargetFormats } from '@/consts'
+import {
+  formatToMimeMap,
+  mimeToFormatMap,
+  supportedTargetFormats,
+} from '@/consts'
 import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'
@@ -99,8 +103,8 @@ router.get('/', async (req, res) => {
       headers: {
         'Content-Type': formatToMimeMap[targetFormat],
         'Cache-Control': 'public, max-age=31536000, must-revalidate',
-        'x-image-cache': cacheStatus.toUpperCase(),
-        'x-image-age': `${age}`,
+        'X-Image-Cache': cacheStatus.toUpperCase(),
+        'X-Image-Age': `${age}`,
       },
     })
   } catch (err) {

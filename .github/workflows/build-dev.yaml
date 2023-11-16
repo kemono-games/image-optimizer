@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - mns
 jobs:
   build:
     environment: staging
@@ -31,7 +32,7 @@ jobs:
         with:
           push: true
           context: .
-          tags: registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:dev-${{ env.SHA }}
+          tags: registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:${{ github.head_ref }}-${{ env.SHA }}
           file: Dockerfile
 
   deploy:
@@ -63,8 +64,8 @@ jobs:
           ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
           SHA: ${{ env.SHA }}
         run: |
-          fcli function update -f img-opti -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:dev-$SHA
-          fcli function update -f img-opti-clean -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:dev-$SHA
+          fcli function update -f img-opti -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:$GITHUB_HEAD_REF-$SHA
+          fcli function update -f img-opti-clean -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:$GITHUB_HEAD_REF-$SHA
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

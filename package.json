@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "NODE_ENV=production node dist/bootstrap.js",
+    "start:worker": "NODE_ENV=production node dist/worker",
     "dev": "nodemon",
     "dev:server": "NODE_ENV=development ts-node --swc -r tsconfig-paths/register src/bootstrap.ts",
     "dev:worker": "NODE_ENV=development ts-node --swc -r tsconfig-paths/register src/worker/test.ts",

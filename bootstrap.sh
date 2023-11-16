@@ -8,6 +8,13 @@ else
   echo "$OPTIMIZER_CONFIG_JS" > optimizer.config.js
 fi
 
+if [ -z "$IS_WORKER" ]; then
+  # 如果 IS_WORKER 不存在
+  echo "Running server"
+  yarn start
+else
+  # 如果 IS_WORKER 存在
+  echo "Running worker"
+  yarn start:worker
+fi
 # 运行 yarn start
-echo "Running yarn start"
-yarn start

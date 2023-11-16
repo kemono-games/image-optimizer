@@ -48,7 +48,7 @@ router.head('/', async (req, res) => {
       type: 'animation' as const,
       params,
     }
-    const [cacheStatus, cachePath, age] = await getWithCache(payload)
+    const [cacheStatus, cachePath, age] = await getWithCache(payload, 60)
     const stat = fs.statSync(cachePath)
     res.writeHead(200, {
       'Accept-Ranges': 'bytes',
@@ -91,7 +91,7 @@ router.get('/', async (req, res) => {
       type: 'animation' as const,
       params,
     }
-    const [cacheStatus, cachePath, age] = await getWithCache(payload)
+    const [cacheStatus, cachePath, age] = await getWithCache(payload, 60)
     logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)
     const stat = fs.statSync(cachePath)
     const range = req.range(stat.size)

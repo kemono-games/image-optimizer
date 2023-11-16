@@ -21,6 +21,7 @@ export async function optimizeAnimation(
             '-movflags +faststart',
             '-movflags frag_keyframe+empty_moov',
             "-filter:v crop='floor(in_w/2)*2:floor(in_h/2)*2'",
+            '-preset veryfast',
           ])
           .pipe()
       : command

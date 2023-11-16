@@ -81,9 +81,10 @@ export class Cache {
 type CacheStatus = 'hit' | 'miss'
 export const getWithCache = async (
   payload: MQMessage,
+  timeout?: number,
 ): Promise<[CacheStatus, string, number]> => {
   const cacheKey = payload.cacheKey
-  const cacheLocker = new Locker(cacheKey)
+  const cacheLocker = new Locker(cacheKey, timeout)
   const cache = new Cache(cacheKey)
 
   while (await cacheLocker.isLocked()) {

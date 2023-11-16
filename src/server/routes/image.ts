@@ -3,11 +3,7 @@ import { pipe } from 'fp-ts/lib/function'
 import { NumberFromString } from 'io-ts-types'
 import hash from 'object-hash'
 
-import {
-  formatToMimeMap,
-  mimeToFormatMap,
-  supportedTargetFormats,
-} from '@/consts'
+import { formatToMimeMap, mimeToFormatMap, supportedTargetFormats } from '@/consts'
 import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'
@@ -93,7 +89,7 @@ router.get('/', async (req, res) => {
         ...params,
       },
     }
-    const [cacheStatus, cachePath, age] = await getWithCache(payload)
+    const [cacheStatus, cachePath, age] = await getWithCache(payload, 15)
     logger.info(
       `[${cacheStatus.toUpperCase()}] ${params.url}, W:${params.w}, H:${
         params.h

@@ -1,8 +1,11 @@
+import { PassThrough } from 'stream'
+
 import { Cache } from '@/lib/cache'
 import { E } from '@/lib/fp'
 import { Locker } from '@/lib/locker'
 import Logger from '@/lib/logger'
 
+import { optimizeAnimation } from './handler/animation'
 import { optimizeImage } from './handler/image'
 import { eventDecoder } from './lib/decoder'
 
@@ -31,9 +34,10 @@ const handler = async () => {
   logger.info('Start processing:', payload)
   const start = Date.now()
 
+  let stream: PassThrough
   if (type === 'image') {
-    logger.info('Image params:', params)
-    const [error, stream] = await optimizeImage({
+    logger.info('Image optimize')
+    const [error, _stream] = await optimizeImage({
       url: params.url,
       format: params.format,
       width: params.w,
@@ -44,11 +48,26 @@ const handler = async () => {
       logger.error('Optimize image error:', error)
       return process.exit(1)
     }
+    stream = _stream
+  } else if (type === 'animation') {
+    logger.info('Animation optimize')
+    const [error, _stream] = await optimizeAnimation(params.url, params.format)
+    if (error) {
+      logger.error('Optimize animation error:', error)
+      return process.exit(1)
+    }
+    stream = _stream
+  }
+
+  if (stream) {
     await cache.set(stream)
     await locker.unlock()
+    logger.info('Finish processing. Cost:', Date.now() - start, 'ms')
+    return process.exit(0)
   }
-  logger.info('Finish processing. Cost:', Date.now() - start, 'ms')
-  process.exit(0)
+
+  logger.error('Unknown type:', type)
+  process.exit(1)
 }
 
 handler()

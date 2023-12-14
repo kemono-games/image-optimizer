@@ -65,7 +65,6 @@ jobs:
           SHA: ${{ env.SHA }}
         run: |
           fcli function update -f img-opti -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:$GITHUB_REF_NAME-$SHA
-          fcli function update -f img-opti-clean -s kemono-staging -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:$GITHUB_REF_NAME-$SHA
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

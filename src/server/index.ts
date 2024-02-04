@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express from 'express'
 import fs from 'fs'
 import helmet from 'helmet'
@@ -27,6 +28,11 @@ if (config.sentryDsn) {
   app.use(Sentry.Handlers.tracingHandler())
 }
 
+const corsOptions = {
+  origin: '*',
+  optionsSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 app.use(helmet({ crossOriginResourcePolicy: false }))
 app.use(
   morgan('dev', {
@@ -40,6 +46,7 @@ app.use(
 )
 app.use(express.urlencoded({ extended: false }))
 
+app.options('*', cors(corsOptions))
 app.all('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)
 app.use('/animation', animationRouter)

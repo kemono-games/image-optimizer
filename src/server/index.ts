@@ -16,7 +16,7 @@ const app = express()
 
 if (config.sentryDsn) {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
+    dsn: config.sentryDsn,
     integrations: [
       new Sentry.Integrations.Http({ tracing: true }),
       new Sentry.Integrations.Express({ app }),

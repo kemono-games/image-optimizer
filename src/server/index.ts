@@ -7,7 +7,6 @@ import morgan from 'morgan'
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import * as Sentry from '@sentry/node'
-import * as Tracing from '@sentry/tracing'
 
 import animationRouter from './routes/animation'
 import imageRouter from './routes/image'
@@ -20,7 +19,7 @@ if (config.sentryDsn) {
     dsn: process.env.SENTRY_DSN,
     integrations: [
       new Sentry.Integrations.Http({ tracing: true }),
-      new Tracing.Integrations.Express({ app }),
+      new Sentry.Integrations.Express({ app }),
     ],
     tracesSampleRate: 0.3,
   })

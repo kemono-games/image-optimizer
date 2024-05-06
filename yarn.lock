@@ -203,6 +203,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sentry/profiling-node@npm:^7.113.0":
+  version: 7.113.0
+  resolution: "@sentry/profiling-node@npm:7.113.0"
+  dependencies:
+    detect-libc: "npm:^2.0.2"
+    node-abi: "npm:^3.61.0"
+    node-gyp: "npm:latest"
+  bin:
+    sentry-prune-profiler-binaries: scripts/prune-profiler-binaries.js
+  checksum: 65ca9b0ab671c634f373612e9cea2b69a12804865931f4c39f95549d4e94f701e38ec558c9d5eaf2cae686639e7e344d293bda82a951a9ca528c37ff912bdd5d
+  languageName: node
+  linkType: hard
+
 "@sentry/types@npm:7.113.0":
   version: 7.113.0
   resolution: "@sentry/types@npm:7.113.0"
@@ -2599,6 +2612,7 @@ __metadata:
   resolution: "image-optimizer@workspace:."
   dependencies:
     "@sentry/node": "npm:^7.113.0"
+    "@sentry/profiling-node": "npm:^7.113.0"
     "@swc/cli": "npm:^0.1.59"
     "@swc/core": "npm:^1.3.26"
     "@swc/helpers": "npm:^0.4.14"
@@ -3404,6 +3418,15 @@ __metadata:
   dependencies:
     semver: "npm:^7.3.5"
   checksum: 19fdf5a2be177a3a0474d7be23ce5aa689e50fd50109865ca5d50863fa30187f2bd0458dc7f6ff655e94fbd3bb47a4158ba46ee912618325361fed83285f2849
+  languageName: node
+  linkType: hard
+
+"node-abi@npm:^3.61.0":
+  version: 3.62.0
+  resolution: "node-abi@npm:3.62.0"
+  dependencies:
+    semver: "npm:^7.3.5"
+  checksum: 62e11264cbb51387cf4599b04e0418c7eba725afe3a228504ade957d61f579a5cb24df79dad9d338b9beb58d723643d40c9fcae2cfc2fe775c0ef56bb0fd0ec8
   languageName: node
   linkType: hard
 

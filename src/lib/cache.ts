@@ -36,8 +36,9 @@ export class Cache {
       ])
       return [null]
     }
-    await redisClient.zincrby('cache_access_count', 1, this.key)
-    return [filePath, Math.floor((Date.now() - parseInt(timestamp)) / 1000)]
+    redisClient.zincrby('cache_access_count', 1, this.key)
+    const age = Math.floor((Date.now() - parseInt(timestamp)) / 1000)
+    return [filePath, age]
   }
 
   set = (data: PassThrough) =>

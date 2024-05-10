@@ -20,7 +20,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY src ./src
 COPY scripts ./scripts
-COPY package.json yarn.lock* bootstrap.sh cli.sh tsconfig.json ./
+COPY .yarn ./.yarn
+COPY package.json .yarnrc.yml yarn.lock* bootstrap.sh cli.sh tsconfig.json ./
 COPY optimizer.config.example.js ./optimizer.config.example.js
 RUN cp optimizer.config.example.js optimizer.config.js
 

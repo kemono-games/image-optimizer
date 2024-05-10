@@ -18,7 +18,7 @@ export function optimizeImage({
     page: 2,
   })
 
-  transformer.rotate()
+  transformer.rotate().toColorspace('srgb')
 
   if (width || height) {
     transformer.resize(width, height, {
@@ -27,12 +27,15 @@ export function optimizeImage({
   }
 
   if (contentType === AVIF) {
-    const avifQuality = Math.max(quality - 15, 0)
-    transformer.avif({
-      effort: 4,
-      quality: avifQuality,
-      chromaSubsampling: '4:2:0', // same as webp
-    })
+    const avifQuality = Math.max(quality - 25, 45)
+    transformer
+      .avif({
+        effort: 3,
+        quality: avifQuality,
+        chromaSubsampling: '4:2:0', // same as webp
+        bitdepth: 8,
+      })
+      .sharpen()
   } else if (contentType === WEBP) {
     transformer.webp({ quality })
   } else if (contentType === PNG) {

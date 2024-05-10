@@ -88,7 +88,8 @@ export const getWithCache = async (options: {
   const cacheLocker = new Locker(cacheKey)
   const cache = new Cache(cacheKey)
 
-  const [cached, age] = await cache.get()
+  const [cached, age] =
+    process.env.NODE_ENV === 'development' ? [null] : await cache.get()
 
   const update = async () => {
     if (await cacheLocker.isLocked()) return

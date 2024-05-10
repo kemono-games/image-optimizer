@@ -19,6 +19,7 @@
     "@types/node": "^18",
     "@types/node-cron": "^3.0.7",
     "@types/object-hash": "^3.0.2",
+    "@types/sharp": "^0.32.0",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
     "eslint": "^8.20.0",
@@ -34,7 +35,6 @@
   "dependencies": {
     "@sentry/node": "^7.113.0",
     "@sentry/profiling-node": "^7.113.0",
-    "@types/sharp": "^0.31.1",
     "axios": "^1.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -50,7 +50,7 @@
     "morgan": "^1.10.0",
     "newtype-ts": "^0.3.5",
     "object-hash": "^3.0.0",
-    "sharp": "^0.32.6"
+    "sharp": "^0.33.3"
   },
   "packageManager": "yarn@4.0.2"
 }

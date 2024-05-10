@@ -102,7 +102,7 @@ router.get('/', async (req, res) => {
       async fetcher() {
         if (shouldUseOssCompressionForAvif(imageUrl)) {
           const processStr = ['image', 'auto-orient,1', 'format,avif']
-          processStr.push(`quality,q_${params.quality}`)
+          processStr.push(`quality,q_${Math.min(params.quality + 25, 100)}`)
           const resize = []
           if (params.width || params.height) {
             resize.push('resize', 'm_lfit')

@@ -150,7 +150,7 @@ router.get('/', async (req, res) => {
           res.writeHead(200, {
             'Content-Type': targetFormat,
             'Cache-Control':
-              'public, max-age=31536000, s-max-age=31536000, must-revalidate',
+              'public, max-age=31536000, s-max-age=31536000, immutable',
             'x-image-cache': cacheStatus.toUpperCase(),
             'x-image-age': `${age}`,
           })

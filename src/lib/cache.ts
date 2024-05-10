@@ -35,13 +35,10 @@ export class Cache {
     if (!file) return [null]
     const filePath = getCacheFilePath(file)
     if (!fs.existsSync(filePath)) {
-      await Promise.all([
-        redisClient.del(this.key),
-        redisClient.zrem('cache_access_count', this.key),
-      ])
+      await redisClient.del(this.key)
+
       return [null]
     }
-    redisClient.zincrby('cache_access_count', 1, this.key)
     const age = Math.floor((Date.now() - parseInt(timestamp)) / 1000)
     return [filePath, age]
   }
@@ -126,4 +123,8 @@ export const getWithCache = async (options: {
     const [cached, age] = await cache.get()
     return callback('miss', cached, age)
   }
+}
+
+export const clean = async () => {
+  redisClient.z
 }

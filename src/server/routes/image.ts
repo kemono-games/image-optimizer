@@ -126,7 +126,7 @@ router.get('/', async (req, res) => {
         return new Promise<void>((resolve) => {
           res.writeHead(200, {
             'Content-Type': targetFormat,
-            'Cache-Control': 'public, max-age=31536000, must-revalidate',
+            'Cache-Control': 'public, max-age=31536000, s-max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
             'x-image-age': `${age}`,
           })

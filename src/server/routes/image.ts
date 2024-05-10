@@ -4,9 +4,14 @@ import fs from 'fs'
 import { NumberFromString } from 'io-ts-types'
 import { PassThrough } from 'node:stream'
 
-import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
+import {
+  AVIF,
+  returnOriginalFormats,
+  supportedFormats,
+  supportedTargetFormats,
+} from '@/consts'
 import { getWithCache } from '@/lib/cache'
-import { config } from '@/lib/config'
+import { config, shouldUseOssCompressionForAvif } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'
 import http from '@/lib/http'
 import Logger from '@/lib/logger'
@@ -95,6 +100,16 @@ router.get('/', async (req, res) => {
     await getWithCache({
       cacheKey,
       async fetcher() {
+        if (shouldUseOssCompressionForAvif(imageUrl)) {
+          imageUrl.searchParams.set('x-oss-process', 'image/format,avif')
+          const { data } = await http.get(
+            config.urlParser(imageUrl.toString()),
+            {
+              responseType: 'stream',
+            },
+          )
+          return [null, data]
+        }
         const { data, headers: imageHeaders } = await http.get(
           config.urlParser(imageUrl.toString()),
           {
@@ -111,7 +126,6 @@ router.get('/', async (req, res) => {
         if (returnOriginalFormats.includes(contentType)) {
           return [null, data]
         }
-
         const transformer = optimizeImage({
           contentType: targetFormat,
           width: params.width,
@@ -126,7 +140,8 @@ router.get('/', async (req, res) => {
         return new Promise<void>((resolve) => {
           res.writeHead(200, {
             'Content-Type': targetFormat,
-            'Cache-Control': 'public, max-age=31536000, s-max-age=31536000, must-revalidate',
+            'Cache-Control':
+              'public, max-age=31536000, s-max-age=31536000, must-revalidate',
             'x-image-cache': cacheStatus.toUpperCase(),
             'x-image-age': `${age}`,
           })

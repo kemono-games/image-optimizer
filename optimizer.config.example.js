@@ -26,6 +26,9 @@ module.exports = {
     ffprobePath,
   },
   sentryDsn: '',
-  supportAvif: false,
-  avifCompressionByOSS: false
+  avif: {
+    support: false,
+    avifCompressionByOSS: false,
+    ossDomains: [],
+  },
 }

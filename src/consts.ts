@@ -11,7 +11,7 @@ export const APNG = 'image/apng'
 export const supportedFormats = [AVIF, WEBP, PNG, JPEG, GIF, SVG, APNG]
 
 export const supportedTargetFormats = [WEBP, PNG, JPEG]
-if (config.supportAvif) supportedTargetFormats.push(AVIF)
+if (config.avif.support) supportedTargetFormats.push(AVIF)
 
 export const returnOriginalFormats = [SVG]
 

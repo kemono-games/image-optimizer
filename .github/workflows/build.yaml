@@ -108,7 +108,7 @@ jobs:
           SHA: ${{ env.SHA }}
         run: |
           fcli function update -f img-opti -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA
-          fcli function update -f img-opti-cleaner -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA -n '[\"./cli.sh\", \"clean\"]'
+          fcli function update -f img-opti-cleaner -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA -n '["./cli.sh", "clean"]'
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

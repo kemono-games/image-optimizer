@@ -5,6 +5,7 @@ import hash from 'object-hash'
 import path from 'path'
 import { PassThrough } from 'stream'
 
+import { AVIF } from '@/consts'
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import { CachaParams } from '@/types'
@@ -22,7 +23,11 @@ export class Cache {
   private key: string
 
   constructor(params: CachaParams) {
-    this.key = `image_cache:${hash(params)}`
+    if (params.targetFormat === AVIF) {
+      this.key = `image_cache:v2:${hash(params)}`
+    } else {
+      this.key = `image_cache:${hash(params)}`
+    }
   }
   get = async (): Promise<[null] | [string, number]> => {
     const cached = await redisClient.hgetall(this.key)

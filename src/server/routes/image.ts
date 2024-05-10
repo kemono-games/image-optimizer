@@ -4,12 +4,7 @@ import fs from 'fs'
 import { NumberFromString } from 'io-ts-types'
 import { PassThrough } from 'node:stream'
 
-import {
-  AVIF,
-  returnOriginalFormats,
-  supportedFormats,
-  supportedTargetFormats,
-} from '@/consts'
+import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
 import { getWithCache } from '@/lib/cache'
 import { config, shouldUseOssCompressionForAvif } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'

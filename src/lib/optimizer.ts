@@ -27,15 +27,15 @@ export function optimizeImage({
   }
 
   if (contentType === AVIF) {
-    const avifQuality = Math.max(quality - 25, 45)
+    const avifQuality = Math.max(quality - 25, 40)
     transformer
       .avif({
-        effort: 3,
+        effort: 4,
         quality: avifQuality,
         chromaSubsampling: '4:2:0', // same as webp
         bitdepth: 8,
       })
-      .sharpen()
+      .sharpen({ sigma: 0.5, m1: 0.5, m2: 1.5 })
   } else if (contentType === WEBP) {
     transformer.webp({ quality })
   } else if (contentType === PNG) {

@@ -1,6 +1,6 @@
 {
   "name": "image-optimizer",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "main": "index.js",
   "license": "MIT",
   "scripts": {

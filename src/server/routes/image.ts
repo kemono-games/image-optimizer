@@ -101,7 +101,17 @@ router.get('/', async (req, res) => {
       cacheKey,
       async fetcher() {
         if (shouldUseOssCompressionForAvif(imageUrl)) {
-          imageUrl.searchParams.set('x-oss-process', 'image/format,avif')
+          const processStr = ['image', 'auto-orient,1', 'format,avif']
+          const quality = Math.max(params.quality - 15, 15)
+          processStr.push(`quality,q_${quality}`)
+          const resize = []
+          if (params.width || params.height) {
+            resize.push('resize', 'm_lfit')
+            if (params.width) resize.push(`w_${params.width}`)
+            if (params.height) resize.push(`h_${params.height}`)
+            processStr.push(resize.join(','))
+          }
+          imageUrl.searchParams.set('x-oss-process', processStr.join('/'))
           const { data } = await http.get(
             config.urlParser(imageUrl.toString()),
             {

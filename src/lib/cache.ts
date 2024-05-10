@@ -23,11 +23,7 @@ export class Cache {
   private key: string
 
   constructor(params: CachaParams) {
-    if (params.targetFormat === AVIF) {
-      this.key = `image_cache:v2:${hash(params)}`
-    } else {
-      this.key = `image_cache:${hash(params)}`
-    }
+    this.key = `image_cache:v2:${hash(params)}`
   }
   get = async (): Promise<[null] | [string, number]> => {
     const cached = await redisClient.hgetall(this.key)

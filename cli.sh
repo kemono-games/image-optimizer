@@ -9,7 +9,6 @@ else
 fi
 
 echo "Running yarn install"
-corepack enable
 yarn install --immutable
 
 # 将第一个参数附加在 yarn cli 后面执行

@@ -9,7 +9,7 @@ else
 fi
 
 echo "Running yarn install"
-yarn install --production=false
+yarn install --immutable
 
 # 将第一个参数附加在 yarn cli 后面执行
 echo "Running yarn cli $1"

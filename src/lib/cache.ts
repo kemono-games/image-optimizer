@@ -36,9 +36,9 @@ export class Cache {
     const filePath = getCacheFilePath(file)
     if (!fs.existsSync(filePath)) {
       await redisClient.del(this.key)
-
       return [null]
     }
+    redisClient.expire(this.key, config.ttl)
     const age = Math.floor((Date.now() - parseInt(timestamp)) / 1000)
     return [filePath, age]
   }
@@ -62,12 +62,13 @@ export class Cache {
         )
         try {
           await Promise.all([
-            redisClient.hset(this.key, {
+            redisClient.hmset(this.key, {
               file: fileHash,
               timestamp: `${Date.now()}`,
             }),
             fsPromise.writeFile(getCacheFilePath(fileHash), data),
           ])
+          redisClient.expire(this.key, config.ttl)
           resolve()
         } catch (err) {
           logger.error('Error while create image cache: ', err)
@@ -126,5 +127,25 @@ export const getWithCache = async (options: {
 }
 
 export const clean = async () => {
-  redisClient.z
+  const logger = Logger.get('clean')
+  logger.info('Start cleaning cache')
+  const walk = (dir: string) => {
+    logger.info(`Cleaning cache in ${dir}`)
+    const files = fs.readdirSync(dir)
+    files.forEach((file) => {
+      const filePath = path.join(dir, file)
+      const stat = fs.statSync(filePath)
+      if (stat.isDirectory()) {
+        walk(filePath)
+      } else {
+        const age = (Date.now() - stat.atime.getTime()) / 1000
+        if (age > config.ttl) {
+          logger.info(`Delete cache file: ${filePath}`)
+          fs.unlinkSync(filePath)
+        }
+      }
+    })
+  }
+  walk(config.cachePath)
+  process.exit(0)
 }

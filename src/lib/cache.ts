@@ -147,5 +147,21 @@ export const clean = async () => {
     })
   }
   walk(config.cachePath)
+
+  const walkAndDeleteEmptyFolder = (dir: string) => {
+    const files = fs.readdirSync(dir)
+    if (files.length === 0) {
+      logger.info(`Delete empty folder: ${dir}`)
+      fs.rmdirSync(dir)
+    }
+    files.forEach((file) => {
+      const filePath = path.join(dir, file)
+      const stat = fs.statSync(filePath)
+      if (stat.isDirectory()) {
+        walkAndDeleteEmptyFolder(filePath)
+      }
+    })
+  }
+  walkAndDeleteEmptyFolder(config.cachePath)
   process.exit(0)
 }

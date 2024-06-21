@@ -105,6 +105,7 @@ jobs:
 
       - name: Deploy to ECS
         run: |
+          mkdir -p ~/.ssh
           echo "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
           cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml

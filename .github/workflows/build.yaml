@@ -93,22 +93,25 @@ jobs:
         with:
           length: 7
 
-      - name: Install fcli
-        run: |
-          curl -o fcli.zip https://gosspublic.alicdn.com/fcli/fcli-v1.0.4-linux-amd64.zip
-          unzip fcli.zip
-          sudo mv fcli /usr/local/bin/
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
-      - name: Update image version
-        env:
-          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          ALIBABA_CLOUD_DEFAULT_REGION: cn-shenzhen
-          ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
-          SHA: ${{ env.SHA }}
+      - name: Install parallel
+        run: sudo apt-get install -y parallel
+
+      - name: Deploy to ECS
         run: |
-          fcli function update -f img-opti -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA
-          fcli function update -f img-opti-cleaner -s kemono -g registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-$SHA -n '["./cli.sh", "clean"]'
+          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
+          cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
+          sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
+          SERVER=("img-opti-sz")
+          parallel "ssh {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
+          parallel scp /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
+          parallel "ssh {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

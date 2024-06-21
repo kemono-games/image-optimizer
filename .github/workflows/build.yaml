@@ -103,7 +103,7 @@ jobs:
       - name: Deploy to ECS
         run: |
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          ssh -o StrictHostKeyChecking=no img-opti-sz 'echo "GIT_HASH=${GIT_HASH}" > /root/image-optimizer/.env'
+          ssh -o StrictHostKeyChecking=no root@img-opti-sz 'echo "GIT_HASH=${GIT_HASH}" > /root/image-optimizer/.env'
       #     cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
       #     sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
       #     SERVER=("img-opti-sz")

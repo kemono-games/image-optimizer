@@ -100,20 +100,15 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Install parallel
-        run: sudo apt-get install -y parallel
-
       - name: Deploy to ECS
         run: |
-          mkdir -p ~/.ssh
-          echo "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
           GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
           cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
           sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
           SERVER=("img-opti-sz")
-          parallel "ssh {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-          parallel scp /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-          parallel "ssh {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+          parallel "ssh -o StrictHostKeyChecking=no {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
+          parallel scp -o StrictHostKeyChecking=no /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
+          parallel "ssh -o StrictHostKeyChecking=no {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
 
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2

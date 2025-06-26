@@ -4,7 +4,14 @@ import fs from 'fs'
 import { NumberFromString } from 'io-ts-types'
 import { PassThrough } from 'node:stream'
 
-import { returnOriginalFormats, supportedFormats, supportedTargetFormats } from '@/consts'
+import {
+  AVIF,
+  JPEG,
+  WEBP,
+  returnOriginalFormats,
+  supportedFormats,
+  supportedTargetFormats,
+} from '@/consts'
 import { getWithCache } from '@/lib/cache'
 import { config, shouldUseOssCompressionForAvif } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'
@@ -25,6 +32,11 @@ const paramsDecoder = (params: any) =>
           w: D.string,
           h: D.string,
           q: D.string,
+          format: D.union(
+            D.literal('jpg'),
+            D.literal('webp'),
+            D.literal('avif'),
+          ),
         }),
       ),
     ).decode(params),
@@ -45,6 +57,7 @@ const paramsDecoder = (params: any) =>
         O.fromEither,
         O.getOrElse(() => 75),
       ),
+      format: params.format,
     })),
   )
 
@@ -78,16 +91,24 @@ router.get('/', async (req, res) => {
   }
 
   const { accept } = headers
-  const acceptFormats =
-    accept
-      ?.replace('jpg', 'jpeg')
-      .toLowerCase()
-      .split(',')
-      .map((e) => e.split(';'))
-      .flat()
-      .filter((e) => e.startsWith('image/'))
-      .filter((e) => supportedTargetFormats.includes(e)) ?? []
-  const targetFormat = acceptFormats[0] ?? 'image/jpeg'
+
+  // 优先使用 format 参数，其次使用 Accept header
+  let targetFormat: string
+  if (params.format) {
+    targetFormat =
+      params.format === 'jpg' ? JPEG : params.format === 'webp' ? WEBP : AVIF
+  } else {
+    const acceptFormats =
+      accept
+        ?.replace('jpg', 'jpeg')
+        .toLowerCase()
+        .split(',')
+        .map((e) => e.split(';'))
+        .flat()
+        .filter((e) => e.startsWith('image/'))
+        .filter((e) => supportedTargetFormats.includes(e)) ?? []
+    targetFormat = acceptFormats[0] ?? JPEG
+  }
 
   const cacheKey = { ...params, targetFormat }
 

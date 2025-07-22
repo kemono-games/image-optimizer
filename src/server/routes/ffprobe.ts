@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import multer from 'multer'
@@ -14,11 +15,11 @@ const logger = Logger.get('ffprobe')
 
 const router = Router()
 
-// Multer 配置 - 磁盘存储，限制 3KB
+// Multer 配置 - 磁盘存储，限制 2M
 const upload = multer({
   storage: multer.diskStorage({}),
   limits: {
-    fileSize: 3 * 1024, // 3KB
+    fileSize: 2 * 1024 * 1024, // 2MB
     // fileSize: 20 * 1024 * 1024, // 20MB
   },
   fileFilter: (req, file, cb) => {
@@ -112,7 +113,7 @@ const analyzeVideoFile = async (filePath: string): Promise<VideoInfo> => {
 const analyzeVideoBuffer = async (buffer: Buffer): Promise<VideoInfo> => {
   const tempFilePath = path.join(
     os.tmpdir(),
-    `ffprobe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    `ffprobe-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`,
   )
 
   // 将 buffer 写入临时文件

@@ -81,38 +81,38 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_MESSAGE: 'image-optimizer 已部署'
 
-  deploy-cn:
-    environment: production
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  # deploy-cn:
+  #   environment: production
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - uses: benjlevesque/short-sha@v2.1
-        id: short-sha
-        with:
-          length: 7
+  #     - uses: benjlevesque/short-sha@v2.1
+  #       id: short-sha
+  #       with:
+  #         length: 7
 
-      - name: Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+  #     - name: Tailscale
+  #       uses: tailscale/github-action@v2
+  #       with:
+  #         oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+  #         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+  #         tags: tag:ci
 
-      - name: Deploy to ECS
-        run: |
-          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-          cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
-          sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
-          SERVER=("root@img-opti-sz")
-          parallel "ssh -o StrictHostKeyChecking=no {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-          parallel scp -o StrictHostKeyChecking=no /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-          parallel "ssh -o StrictHostKeyChecking=no {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
+  #     - name: Deploy to ECS
+  #       run: |
+  #         GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
+  #         cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
+  #         sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
+  #         SERVER=("root@img-opti-sz")
+  #         parallel "ssh -o StrictHostKeyChecking=no {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
+  #         parallel scp -o StrictHostKeyChecking=no /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
+  #         parallel "ssh -o StrictHostKeyChecking=no {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
 
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_USERNAME: 'GitHub Actions'
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_MESSAGE: 'image-optimizer-cn 已部署'
+  #     - name: Slack Notification
+  #       uses: rtCamp/action-slack-notify@v2
+  #       env:
+  #         SLACK_USERNAME: 'GitHub Actions'
+  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  #         SLACK_MESSAGE: 'image-optimizer-cn 已部署'

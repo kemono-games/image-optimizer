@@ -207,7 +207,7 @@ router.get('/', async (req, res) => {
   // 下载前 1024 字节
   const { data } = await http.get(config.urlParser(videoUrl.toString()), {
     headers: {
-      Range: 'bytes=0-1023',
+      Range: 'bytes=0-2047',
     },
     responseType: 'arraybuffer',
   })

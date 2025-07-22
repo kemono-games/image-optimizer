@@ -119,7 +119,7 @@ router.get('/', async (req, res) => {
   try {
     await getWithCache({
       cacheKey,
-      async fetcher() {
+      async fetcher(): Promise<[string] | [null, PassThrough]> {
         if (shouldUseOssCompressionForAvif(imageUrl)) {
           const processStr = ['image', 'auto-orient,1', 'format,avif']
           processStr.push(`quality,q_${Math.min(params.quality + 25, 100)}`)

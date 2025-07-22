@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
     await getWithCache({
       cacheKey,
       fetcher: revalidate(videoUrl.toString(), format),
-      callback: (cacheStatus, cachePath: string) =>
+      callback: (cacheStatus, cachePath) =>
         new Promise<void>((resolve) => {
           logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)
           const stat = fs.statSync(cachePath)

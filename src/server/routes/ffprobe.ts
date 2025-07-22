@@ -205,10 +205,26 @@ router.get('/', async (req, res) => {
 
   logger.info(`Analyzing video from URL: ${url}`)
 
-  // 下载前 1024 字节
+  // 先发送 HEAD 请求获取 content-type
+  const headResponse = await http.head(config.urlParser(videoUrl.toString()))
+  const contentType = headResponse.headers['content-type'] || ''
+
+  // 根据 content-type 确定下载范围
+  let rangeEnd: number
+  if (contentType.includes('webm') || contentType.includes('mkv')) {
+    rangeEnd = 2047 // 2KB for webm/mkv
+    logger.info(`Detected webm/mkv format, using 2KB range`)
+  } else {
+    rangeEnd = 1048575 // 1MB for mp4 or other formats
+    logger.info(
+      `Detected mp4 or other format (${contentType}), using 1MB range`,
+    )
+  }
+
+  // 下载指定范围的字节
   const { data } = await http.get(config.urlParser(videoUrl.toString()), {
     headers: {
-      Range: 'bytes=0-2047',
+      Range: `bytes=0-${rangeEnd}`,
     },
     responseType: 'arraybuffer',
   })

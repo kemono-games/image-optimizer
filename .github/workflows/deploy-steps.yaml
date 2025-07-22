@@ -1,0 +1,50 @@
+name: Deploy Steps
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+      server:
+        required: true
+        type: string
+      deploy_path:
+        required: true
+        type: string
+      env_var_name:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    environment: ${{ inputs.env }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: benjlevesque/short-sha@v2.1
+        id: short-sha
+        with:
+          length: 7
+
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy to ECS
+        run: |
+          GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
+          SERVER=("${{ inputs.server }}")
+          parallel "ssh -o StrictHostKeyChecking=no {} 'mkdir -p ${{ inputs.deploy_path }}'" ::: "${SERVER[@]}"
+          parallel "ssh -o StrictHostKeyChecking=no {} 'cd ${{ inputs.deploy_path }} && sed -i \"s/^${{ inputs.env_var_name }}=.*/${{ inputs.env_var_name }}=${{ github.ref_name }}-${GIT_HASH}/g\" .env'" ::: "${SERVER[@]}"
+          parallel "ssh -o StrictHostKeyChecking=no {} 'cd ${{ inputs.deploy_path }} && docker compose up -d'" ::: "${SERVER[@]}"
+
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_USERNAME: 'GitHub Actions'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: '${{ inputs.env }} 已部署'

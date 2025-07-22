@@ -46,73 +46,14 @@ jobs:
           file: Dockerfile
 
   deploy:
-    environment: production
+    uses: ./.github/workflows/deploy-steps.yaml
     needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: benjlevesque/short-sha@v2.1
-        id: short-sha
-        with:
-          length: 7
-
-      - name: Install fcli
-        run: |
-          curl -o fcli.zip https://gosspublic.alicdn.com/fcli/fcli-v1.0.4-linux-amd64.zip
-          unzip fcli.zip
-          sudo mv fcli /usr/local/bin/
-
-      - name: Update image version
-        env:
-          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-          ALIBABA_CLOUD_DEFAULT_REGION: ap-southeast-1
-          ALIBABA_CLOUD_ACCOUNT_ID: ${{ secrets.ALIYUN_ACCOUNT_ID }}
-          SHA: ${{ env.SHA }}
-        run: |
-          fcli function update -f img-opti -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-$SHA
-          fcli function update -f img-opti-cleaner -s kemono -g registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-$SHA -n '["./cli.sh", "clean"]'
-
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_USERNAME: 'GitHub Actions'
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_MESSAGE: 'image-optimizer 已部署'
-
-  # deploy-cn:
-  #   environment: production
-  #   needs: [build]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - uses: benjlevesque/short-sha@v2.1
-  #       id: short-sha
-  #       with:
-  #         length: 7
-
-  #     - name: Tailscale
-  #       uses: tailscale/github-action@v2
-  #       with:
-  #         oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-  #         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-  #         tags: tag:ci
-
-  #     - name: Deploy to ECS
-  #       run: |
-  #         GIT_HASH=$(git rev-parse --short "$GITHUB_SHA")
-  #         cp deploy/docker-compose.cn.sample.yml /tmp/docker-compose-cn-${GIT_HASH}.yml
-  #         sed -i "s/{{GIT-SHA}}/${GIT_HASH}/g" /tmp/docker-compose-cn-${GIT_HASH}.yml
-  #         SERVER=("root@img-opti-sz")
-  #         parallel "ssh -o StrictHostKeyChecking=no {} 'mkdir -p /root/image-optimizer'" ::: "${SERVER[@]}"
-  #         parallel scp -o StrictHostKeyChecking=no /tmp/docker-compose-cn-${GIT_HASH}.yml {}:/root/image-optimizer/docker-compose.yml ::: "${SERVER[@]}"
-  #         parallel "ssh -o StrictHostKeyChecking=no {} 'cd /root/image-optimizer && docker compose up -d'" ::: "${SERVER[@]}"
-
-  #     - name: Slack Notification
-  #       uses: rtCamp/action-slack-notify@v2
-  #       env:
-  #         SLACK_USERNAME: 'GitHub Actions'
-  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-  #         SLACK_MESSAGE: 'image-optimizer-cn 已部署'
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+    with:
+      env: 'production'
+      server: 'root@kg-db'
+      deploy_path: '/root/kemono-games'
+      env_var_name: 'IMAGE_OPTIMIZER_VERSION'
+    secrets: inherit

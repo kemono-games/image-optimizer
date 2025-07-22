@@ -14,11 +14,11 @@ const logger = Logger.get('ffprobe')
 
 const router = Router()
 
-// Multer 配置 - 磁盘存储，限制 2KB
+// Multer 配置 - 磁盘存储，限制 3KB
 const upload = multer({
   storage: multer.diskStorage({}),
   limits: {
-    fileSize: 2 * 1024, // 2KB
+    fileSize: 3 * 1024, // 3KB
     // fileSize: 20 * 1024 * 1024, // 20MB
   },
   fileFilter: (req, file, cb) => {

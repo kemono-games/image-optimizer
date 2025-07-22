@@ -7,7 +7,6 @@ import morgan from 'morgan'
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import * as Sentry from '@sentry/node'
-import { nodeProfilingIntegration } from '@sentry/profiling-node'
 
 import animationRouter from './routes/animation'
 import ffprobeRouter from './routes/ffprobe'

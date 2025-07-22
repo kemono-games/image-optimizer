@@ -10,25 +10,11 @@ import * as Sentry from '@sentry/node'
 import { nodeProfilingIntegration } from '@sentry/profiling-node'
 
 import animationRouter from './routes/animation'
+import ffprobeRouter from './routes/ffprobe'
 import imageRouter from './routes/image'
 
 const logger = Logger.get('express')
 const app = express()
-
-if (config.sentryDsn) {
-  Sentry.init({
-    dsn: config.sentryDsn,
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({ app }),
-      nodeProfilingIntegration(),
-    ],
-    tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
-  })
-  app.use(Sentry.Handlers.requestHandler())
-  app.use(Sentry.Handlers.tracingHandler())
-}
 
 const corsOptions = {
   origin: '*',
@@ -48,13 +34,13 @@ app.use(
 )
 app.use(express.urlencoded({ extended: false }))
 
-app.options('*', cors(corsOptions))
 app.all('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)
 app.use('/animation', animationRouter)
+app.use('/ffprobe', ffprobeRouter)
 
 if (config.sentryDsn) {
-  app.use(Sentry.Handlers.errorHandler())
+  Sentry.setupExpressErrorHandler(app)
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use(function onError(err, req, res, next) {

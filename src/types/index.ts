@@ -39,3 +39,32 @@ export type CacheParams =
 
 // 保持向后兼容
 export type CachaParams = ImageCacheParams
+
+// 视频信息接口
+export interface VideoInfo {
+  codec: string
+  resolution: {
+    width: number
+    height: number
+  }
+  fps: number
+  duration: number
+}
+
+// ffprobe metadata 类型定义
+export interface FfprobeStream {
+  codec_type: string
+  codec_name: string
+  width?: number
+  height?: number
+  r_frame_rate?: string
+}
+
+export interface FfprobeFormat {
+  duration?: string
+}
+
+export interface FfprobeMetadata {
+  streams?: FfprobeStream[]
+  format?: FfprobeFormat
+}

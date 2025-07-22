@@ -25,8 +25,17 @@ export type FfprobeCacheParams = BaseCacheParams & {
   type: 'ffprobe'
 }
 
+// 动画缓存参数
+export type AnimationCacheParams = BaseCacheParams & {
+  type: 'animation'
+  format: 'mp4' | 'webm'
+}
+
 // 通用缓存参数联合类型
-export type CacheParams = ImageCacheParams | FfprobeCacheParams
+export type CacheParams =
+  | ImageCacheParams
+  | FfprobeCacheParams
+  | AnimationCacheParams
 
 // 保持向后兼容
 export type CachaParams = ImageCacheParams

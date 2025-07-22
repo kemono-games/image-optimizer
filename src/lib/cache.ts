@@ -8,7 +8,7 @@ import { PassThrough } from 'stream'
 import { AVIF } from '@/consts'
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
-import { CachaParams, CacheParams } from '@/types'
+import { CachaParams, CacheParams, AnimationCacheParams } from '@/types'
 
 import { Locker } from './locker'
 import redisClient from './redis'
@@ -22,7 +22,7 @@ const getCacheFilePath = (hash: string) => {
 export class ImageCache {
   private key: string
 
-  constructor(params: CachaParams) {
+  constructor(params: CachaParams | AnimationCacheParams) {
     this.key = `image_cache:v2:${hash(params)}`
   }
   get = async (): Promise<[null] | [string, number]> => {
@@ -135,8 +135,8 @@ export const getWithCache = async <T>(options: {
   const { cacheKey, fetcher, callback } = options
   const cacheLocker = new Locker(cacheKey)
 
-  if (cacheKey.type === 'image') {
-    // 图片缓存逻辑
+  if (cacheKey.type === 'image' || cacheKey.type === 'animation') {
+    // 图片和动画缓存逻辑
     const cache = new ImageCache(cacheKey as any)
     const [cached, age] =
       process.env.NODE_ENV === 'development' ? [null] : await cache.get()

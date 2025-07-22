@@ -5,6 +5,28 @@ export type RequestParams = {
   quality?: number
 }
 
-export type CachaParams = RequestParams & {
+// 基础缓存参数
+export type BaseCacheParams = {
+  url: string
+  type: string
+}
+
+// 图片缓存参数（现有的）
+export type ImageCacheParams = BaseCacheParams & {
+  type: 'image'
+  width?: number
+  height?: number
+  quality?: number
   targetFormat: string
 }
+
+// ffprobe 缓存参数
+export type FfprobeCacheParams = BaseCacheParams & {
+  type: 'ffprobe'
+}
+
+// 通用缓存参数联合类型
+export type CacheParams = ImageCacheParams | FfprobeCacheParams
+
+// 保持向后兼容
+export type CachaParams = ImageCacheParams

@@ -110,7 +110,11 @@ router.get('/', async (req, res) => {
     targetFormat = acceptFormats[0] ?? JPEG
   }
 
-  const cacheKey = { ...params, targetFormat }
+  const cacheKey = {
+    ...params,
+    targetFormat,
+    type: 'image' as const,
+  }
 
   try {
     await getWithCache({
@@ -175,7 +179,7 @@ router.get('/', async (req, res) => {
               params.width
             }, H:${params.height}, Q:${params.quality}, ${targetFormat}`,
           )
-          const data = fs.createReadStream(cachePath)
+          const data = fs.createReadStream(cachePath as string)
           data.pipe(res)
           data.on('end', () => {
             res.end()

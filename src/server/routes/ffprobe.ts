@@ -1,131 +1,23 @@
 import { Router } from 'express'
-import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import multer from 'multer'
-import os from 'os'
-import path from 'path'
 
+import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
+import { analyzeVideoBuffer, analyzeVideoFile, upload } from '@/lib/ffprobe'
 import { D, E } from '@/lib/fp'
 import http from '@/lib/http'
 import Logger from '@/lib/logger'
+import { FfprobeCacheParams } from '@/types'
 
 const logger = Logger.get('ffprobe')
 
 const router = Router()
 
-// Multer 配置 - 磁盘存储，限制 2KB
-const upload = multer({
-  storage: multer.diskStorage({}),
-  limits: {
-    fileSize: 2 * 1024, // 2KB
-    // fileSize: 20 * 1024 * 1024, // 20MB
-  },
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith('video/') ||
-      file.mimetype.startsWith('application/')
-    ) {
-      cb(null, true)
-    } else {
-      cb(new Error('Only video files are allowed'))
-    }
-  },
-})
-
 // URL 参数验证
 const urlParamsDecoder = D.struct({
   url: D.string,
 })
-
-// 视频信息接口
-interface VideoInfo {
-  codec: string
-  resolution: {
-    width: number
-    height: number
-  }
-  fps: number
-  duration: number
-}
-
-// ffprobe metadata 类型定义
-interface FfprobeStream {
-  codec_type: string
-  codec_name: string
-  width?: number
-  height?: number
-  r_frame_rate?: string
-}
-
-interface FfprobeFormat {
-  duration?: string
-}
-
-interface FfprobeMetadata {
-  streams?: FfprobeStream[]
-  format?: FfprobeFormat
-}
-
-// 从 ffprobe metadata 提取视频信息
-const extractVideoInfo = (metadata: FfprobeMetadata): VideoInfo => {
-  const videoStream = metadata.streams?.find(
-    (stream: FfprobeStream) => stream.codec_type === 'video',
-  )
-
-  if (!videoStream) {
-    throw new Error('No video stream found')
-  }
-
-  return {
-    codec: videoStream.codec_name || 'unknown',
-    resolution: {
-      width: videoStream.width || 0,
-      height: videoStream.height || 0,
-    },
-    fps:
-      parseFloat(videoStream.r_frame_rate?.split('/')[0] || '0') /
-        parseFloat(videoStream.r_frame_rate?.split('/')[1] || '1') || 0,
-    duration: parseFloat(metadata.format?.duration || '0') || 0,
-  }
-}
-
-// 从文件路径分析视频信息
-const analyzeVideoFile = async (filePath: string): Promise<VideoInfo> => {
-  // 使用 ffprobe 分析
-  const info = await new Promise<VideoInfo>((resolve, reject) => {
-    ffmpeg.setFfprobePath(config.gifOptimize.ffprobePath)
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) {
-        reject(err)
-      } else {
-        const videoInfo = extractVideoInfo(metadata)
-        resolve(videoInfo)
-      }
-    })
-  })
-
-  return info
-}
-
-// 从 buffer 分析视频信息
-const analyzeVideoBuffer = async (buffer: Buffer): Promise<VideoInfo> => {
-  const tempFilePath = path.join(
-    os.tmpdir(),
-    `ffprobe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-  )
-
-  // 将 buffer 写入临时文件
-  await fs.promises.writeFile(tempFilePath, buffer)
-
-  // 使用 ffprobe 分析
-  const info = await analyzeVideoFile(tempFilePath)
-
-  // 清理临时文件
-  await fs.promises.unlink(tempFilePath)
-
-  return info
-}
 
 // POST 路由 - 处理文件上传
 router.post('/', function (req, res) {
@@ -191,7 +83,15 @@ router.get('/', async (req, res) => {
   const { url } = params.right
 
   // 验证 URL 格式
-  const videoUrl = new URL(url)
+  let videoUrl: URL
+  try {
+    videoUrl = new URL(url)
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid URL format',
+    })
+  }
 
   // 检查 domain 白名单
   const allowDomains = config.domains ?? []
@@ -202,25 +102,74 @@ router.get('/', async (req, res) => {
     })
   }
 
-  logger.info(`Analyzing video from URL: ${url}`)
+  const cacheKey: FfprobeCacheParams = {
+    url,
+    type: 'ffprobe',
+  }
 
-  // 下载前 1024 字节
-  const { data } = await http.get(config.urlParser(videoUrl.toString()), {
-    headers: {
-      Range: 'bytes=0-1023',
-    },
-    responseType: 'arraybuffer',
-  })
+  try {
+    await getWithCache({
+      cacheKey,
+      async fetcher() {
+        logger.info(`Analyzing video from URL: ${url}`)
 
-  const buffer = Buffer.from(data)
-  const videoInfo = await analyzeVideoBuffer(buffer)
+        // 先发送 HEAD 请求获取 content-type
+        const headResponse = await http.head(
+          config.urlParser(videoUrl.toString()),
+        )
+        const contentType = headResponse.headers['content-type'] || ''
 
-  res.json({
-    success: true,
-    data: videoInfo,
-  })
+        // 根据 content-type 确定下载范围
+        let rangeEnd: number
+        if (contentType.includes('webm') || contentType.includes('mkv')) {
+          rangeEnd = 2047 // 2KB for webm/mkv
+          logger.info(`Detected webm/mkv format, using 2KB range`)
+        } else {
+          rangeEnd = 1048575 // 1MB for mp4 or other formats
+          logger.info(
+            `Detected mp4 or other format (${contentType}), using 1MB range`,
+          )
+        }
 
-  logger.info(`Successfully analyzed video from URL: ${url}`)
+        // 下载指定范围的字节
+        const { data } = await http.get(config.urlParser(videoUrl.toString()), {
+          headers: {
+            Range: `bytes=0-${rangeEnd}`,
+          },
+          responseType: 'arraybuffer',
+        })
+
+        const buffer = Buffer.from(data)
+        const videoInfo = await analyzeVideoBuffer(buffer)
+
+        return videoInfo
+      },
+      async callback(cacheStatus, videoInfo, age) {
+        res.json({
+          success: true,
+          data: videoInfo,
+          cache: {
+            status: cacheStatus.toUpperCase(),
+            age: age,
+          },
+        })
+
+        logger.info(
+          `[${cacheStatus.toUpperCase()}] ffprobe analysis for: ${url}, age: ${age}s`,
+        )
+      },
+    })
+  } catch (err) {
+    logger.error(
+      `Error analyzing video from URL: ${url}, error: ${err.message}`,
+    )
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      })
+    }
+  }
 })
 
 export default router

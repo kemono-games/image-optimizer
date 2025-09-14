@@ -68,13 +68,13 @@ router.head('/', async (req, res) => {
     return res.end(err.message || 'Invalid URL')
   }
 
-  const cacheKey = { url, format }
+  const cacheKey = { url, format, type: 'animation' as const }
 
   try {
     await getWithCache({
       cacheKey,
       fetcher: revalidate(videoUrl.toString(), format),
-      callback: (cacheStatus, cachePath, age) =>
+      callback: (cacheStatus, cachePath: string, age) =>
         new Promise<void>((resolve) => {
           const stat = fs.statSync(cachePath)
           res.writeHead(200, {
@@ -115,7 +115,7 @@ router.get('/', async (req, res) => {
     return res.end(err.message || 'Invalid URL')
   }
 
-  const cacheKey = { url, format }
+  const cacheKey = { url, format, type: 'animation' as const }
 
   try {
     await getWithCache({

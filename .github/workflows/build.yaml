@@ -33,6 +33,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64
+
       - name: Build docker image and push
         uses: docker/build-push-action@v3
         with:
@@ -41,8 +46,8 @@ jobs:
           tags: |
             registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
             registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:latest
-            registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
-            registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:latest
+          # registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}
+          # registry.cn-shenzhen.aliyuncs.com/kemono/image-optimizer:latest
           file: Dockerfile
 
   deploy:

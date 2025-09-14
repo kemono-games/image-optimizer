@@ -7,7 +7,8 @@
     "start": "NODE_ENV=production node dist/bootstrap.js",
     "dev": "NODE_ENV=development nodemon",
     "build": "rm -rf dist && swc src -d dist --source-maps --copy-files",
-    "cli": "ts-node -r dotenv/config -r tsconfig-paths/register -O \"{\\\"module\\\": \\\"commonjs\\\", \\\"target\\\": \\\"es2019\\\"}\" scripts/index.ts"
+    "cli": "ts-node -r dotenv/config -r tsconfig-paths/register -O \"{\\\"module\\\": \\\"commonjs\\\", \\\"target\\\": \\\"es2019\\\"}\" scripts/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.59",

@@ -120,6 +120,11 @@ export const getWithCache = async (options: {
       await delay(10)
     }
     const [cached, age] = await cache.get()
+    if (!cached) {
+      throw new Error(
+        'Cache file not available after processing, or process timed out',
+      )
+    }
     return callback('miss', cached, age)
   }
 }

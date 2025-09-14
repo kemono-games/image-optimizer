@@ -13,9 +13,8 @@ RUN yarn workspaces focus --production
 FROM deps AS builder
 ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 COPY . ./
-RUN yarn --immutable
+RUN yarn --immutable && cd node_modules/sharp && npm run install
 RUN yarn build
-RUN env
 
 FROM base AS runner
 ENV SHARP_FORCE_GLOBAL_LIBVIPS=1

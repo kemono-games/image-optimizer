@@ -25,6 +25,8 @@
     "eslint": "^8.20.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^11.4.2",
     "nodemon": "^2.0.19",
     "prettier": "^2.8.3",
     "ts-node": "^10.9.1",
@@ -35,7 +37,7 @@
   "dependencies": {
     "@sentry/node": "^9.40.0",
     "@sentry/profiling-node": "^9.40.0",
-    "axios": "^1.2.2",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^5.1.0",
@@ -51,7 +53,7 @@
     "multer": "^2.0.2",
     "newtype-ts": "^0.3.5",
     "object-hash": "^3.0.0",
-    "sharp": "^0.33.3"
+    "sharp": "^0.34.3"
   },
   "packageManager": "yarn@4.9.2"
 }

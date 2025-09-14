@@ -1,22 +1,24 @@
 import sharp from 'sharp'
 
-import { AVIF, JPEG, PNG, WEBP } from '@/consts'
+import { AVIF, GIF, JPEG, PNG, WEBP } from '@/consts'
 
 export function optimizeImage({
-  contentType,
+  sourceFormat,
+  targetFormat,
   quality,
   width,
   height,
+  input,
 }: {
-  contentType: string
+  sourceFormat: string
+  targetFormat: string
   quality: number
   width?: number
   height?: number
+  input?: Buffer | Uint8Array | string
 }) {
-  const transformer = sharp({
-    pages: 1,
-    page: 2,
-  })
+  const transformer =
+    sourceFormat === GIF ? sharp({ pages: 1, page: 2 }) : sharp()
 
   transformer.rotate().toColorspace('srgb')
 
@@ -26,7 +28,7 @@ export function optimizeImage({
     })
   }
 
-  if (contentType === AVIF) {
+  if (targetFormat === AVIF) {
     const avifQuality = Math.max(quality - 25, 40)
     transformer
       .avif({
@@ -36,11 +38,11 @@ export function optimizeImage({
         bitdepth: 8,
       })
       .sharpen({ sigma: 0.5, m1: 0.5, m2: 1.5 })
-  } else if (contentType === WEBP) {
+  } else if (targetFormat === WEBP) {
     transformer.webp({ quality })
-  } else if (contentType === PNG) {
+  } else if (targetFormat === PNG) {
     transformer.png({ quality })
-  } else if (contentType === JPEG) {
+  } else if (targetFormat === JPEG) {
     transformer.jpeg({ quality })
   }
   return transformer

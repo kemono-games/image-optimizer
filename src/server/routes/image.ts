@@ -8,12 +8,13 @@ import {
   AVIF,
   JPEG,
   WEBP,
+  formatToMime,
   returnOriginalFormats,
   supportedFormats,
   supportedTargetFormats,
 } from '@/consts'
 import { getWithCache } from '@/lib/cache'
-import { config, shouldUseOssCompressionForAvif } from '@/lib/config'
+import { config } from '@/lib/config'
 import { D, E, O } from '@/lib/fp'
 import http from '@/lib/http'
 import Logger from '@/lib/logger'
@@ -95,8 +96,12 @@ router.get('/', async (req, res) => {
   // 优先使用 format 参数，其次使用 Accept header
   let targetFormat: string
   if (params.format) {
-    targetFormat =
-      params.format === 'jpg' ? JPEG : params.format === 'webp' ? WEBP : AVIF
+    const fmt = formatToMime[params.format]
+    if (!supportedTargetFormats.includes(fmt)) {
+      res.writeHead(400)
+      return res.end('Unsupported format')
+    }
+    targetFormat = fmt
   } else {
     const acceptFormats =
       accept
@@ -116,25 +121,6 @@ router.get('/', async (req, res) => {
     await getWithCache({
       cacheKey,
       async fetcher() {
-        if (shouldUseOssCompressionForAvif(imageUrl)) {
-          const processStr = ['image', 'auto-orient,1', 'format,avif']
-          processStr.push(`quality,q_${Math.min(params.quality + 25, 100)}`)
-          const resize = []
-          if (params.width || params.height) {
-            resize.push('resize', 'm_lfit')
-            if (params.width) resize.push(`w_${params.width}`)
-            if (params.height) resize.push(`h_${params.height}`)
-            processStr.push(resize.join(','))
-          }
-          imageUrl.searchParams.set('x-oss-process', processStr.join('/'))
-          const { data } = await http.get(
-            config.urlParser(imageUrl.toString()),
-            {
-              responseType: 'stream',
-            },
-          )
-          return [null, data]
-        }
         const { data, headers: imageHeaders } = await http.get(
           config.urlParser(imageUrl.toString()),
           {
@@ -152,7 +138,8 @@ router.get('/', async (req, res) => {
           return [null, data]
         }
         const transformer = optimizeImage({
-          contentType: targetFormat,
+          sourceFormat: contentType,
+          targetFormat,
           width: params.width,
           height: params.height,
           quality: params.quality,

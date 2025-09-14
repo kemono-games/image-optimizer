@@ -5,7 +5,6 @@ import hash from 'object-hash'
 import path from 'path'
 import { PassThrough } from 'stream'
 
-import { AVIF } from '@/consts'
 import { config } from '@/lib/config'
 import Logger from '@/lib/logger'
 import { CachaParams } from '@/types'
@@ -62,7 +61,10 @@ export class Cache {
               file: fileHash,
               timestamp: `${Date.now()}`,
             }),
-            fsPromise.writeFile(getCacheFilePath(fileHash), data),
+            fsPromise.writeFile(
+              getCacheFilePath(fileHash),
+              new Uint8Array(data),
+            ),
           ])
           redisClient.expire(this.key, config.ttl)
           resolve()

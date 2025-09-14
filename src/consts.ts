@@ -8,10 +8,20 @@ export const GIF = 'image/gif'
 export const SVG = 'image/svg+xml'
 export const APNG = 'image/apng'
 
+export const formatToMime = {
+  avif: AVIF,
+  webp: WEBP,
+  png: PNG,
+  jpg: JPEG,
+  jpeg: JPEG,
+  gif: GIF,
+  svg: SVG,
+  apng: APNG,
+}
+
 export const supportedFormats = [AVIF, WEBP, PNG, JPEG, GIF, SVG, APNG]
 
 export const supportedTargetFormats = [WEBP, PNG, JPEG]
-if (config.avif.support) supportedTargetFormats.push(AVIF)
+if (config.avif) supportedTargetFormats.push(AVIF)
 
 export const returnOriginalFormats = [SVG]
-

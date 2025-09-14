@@ -15,6 +15,7 @@ ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 COPY . ./
 RUN yarn --immutable
 RUN yarn build
+RUN env
 
 FROM base AS runner
 ENV SHARP_FORCE_GLOBAL_LIBVIPS=1

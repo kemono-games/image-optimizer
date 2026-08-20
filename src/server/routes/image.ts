@@ -148,8 +148,13 @@ router.get('/', async (req, res) => {
           height: params.height,
           quality: params.quality,
         })
+        const stream = new PassThrough()
+        // sharp 出错时必须把 error 转发到下游，否则 transformer 上的
+        // unhandled 'error' 事件会直接让整个 Node 进程崩溃
+        transformer.on('error', (err) => stream.destroy(err))
+        data.on('error', (err) => stream.destroy(err))
         data.pipe(transformer)
-        const stream = transformer.pipe(new PassThrough())
+        transformer.pipe(stream)
         return [null, stream]
       },
       callback(cacheStatus, cachePath, age) {

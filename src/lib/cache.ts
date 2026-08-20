@@ -200,12 +200,25 @@ export async function getWithCache<T extends CacheParams>(
   if (cached) {
     return callback('hit', cached as CacheDataType<T>, age)
   } else {
-    update()
+    // update() 不能是 floating promise：它 reject 时会变成
+    // unhandled rejection，直接让整个 Node 进程退出
+    let updateError: unknown
+    update().catch((err) => {
+      updateError = err
+    })
     await delay(10)
 
+    // 忙等加超时上限：进程异常退出会导致 lock 残留（TTL 120s），
+    // 无上限的忙等会把连接 hold 满 120s，触发上游网关 502/504
+    const waitStart = Date.now()
     while (await cacheLocker.isLocked()) {
+      if (Date.now() - waitStart > 15000) {
+        throw new Error('Timed out waiting for cache lock')
+      }
       await delay(10)
     }
+
+    if (updateError) throw updateError
 
     const [newCached, newAge] = await cache.get()
     if (!newCached) {

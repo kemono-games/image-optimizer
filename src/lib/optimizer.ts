@@ -18,7 +18,9 @@ export function optimizeImage({
   input?: Buffer | Uint8Array | string
 }) {
   const transformer =
-    sourceFormat === GIF ? sharp({ pages: 1, page: 2 }) : sharp()
+    // page 是 0 起始索引：page: 2 需要 GIF 至少有 3 帧，
+    // 帧数不足时 libvips 会报 "bad page number"。取第一帧最安全。
+    sourceFormat === GIF ? sharp({ pages: 1, page: 0 }) : sharp()
 
   transformer.rotate().toColorspace('srgb')
 

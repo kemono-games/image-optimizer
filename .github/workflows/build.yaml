@@ -12,36 +12,41 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
-      - uses: benjlevesque/short-sha@v2.1
+      - uses: benjlevesque/short-sha@v4.0
         id: short-sha
         with:
           length: 7
 
       - name: Login to Docker
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: registry.ap-southeast-1.aliyuncs.com
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to Docker
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: registry.cn-shenzhen.aliyuncs.com
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           platforms: linux/amd64
 
       - name: Build docker image and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v7
         with:
           push: true
+          # 阿里云 ACR 无法归类 attestation manifest 的空 config
+          # (application/vnd.oci.empty.v1+json)，推送会被拒绝。
+          # provenance 和 sbom 必须同时关闭，只关一个仍会残留 attestation。
+          provenance: false
+          sbom: false
           context: .
           tags: |
             registry.ap-southeast-1.aliyuncs.com/kemono/image-optimizer:master-${{ env.SHA }}

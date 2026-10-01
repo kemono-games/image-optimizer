@@ -117,6 +117,39 @@ GET /image?url=https://example.com/image.jpg&w=480&format=webp
 GET /image?url=https://example.com/image.jpg&w=480&h=320&q=85&format=avif
 ```
 
+### For YouTube thumbnails:
+
+Endpoint: `/youtube/:id`
+
+Returns the thumbnail of a YouTube video. `maxresdefault.jpg` is used when available, otherwise it falls back to `hqdefault.jpg`.
+
+Path:
+
+```
+id: YouTube video id (required)
+```
+
+Query (same as `/image`, all optional):
+
+```
+w: Output width
+h: Output height
+q: Quality 1-100 (default is 75)
+format: Output format - jpg | webp | avif (auto-detected from Accept header if not specified)
+```
+
+**Examples:**
+
+```
+# Original thumbnail
+GET /youtube/dQw4w9WgXcQ
+
+# Resize and convert to WebP
+GET /youtube/dQw4w9WgXcQ?w=320&format=webp
+```
+
+The thumbnail host can be changed with `youtube.thumbnailHost` in `optimizer.config.js` (default is `i3.ytimg.com`). This endpoint is not restricted by `domains`.
+
 ### For animations:
 
 Endpoint: `/animation`

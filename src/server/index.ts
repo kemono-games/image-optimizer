@@ -11,6 +11,7 @@ import * as Sentry from '@sentry/node'
 import animationRouter from './routes/animation'
 import ffprobeRouter from './routes/ffprobe'
 import imageRouter from './routes/image'
+import youtubeRouter from './routes/youtube'
 
 const logger = Logger.get('express')
 const app = express()
@@ -37,6 +38,7 @@ app.all('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)
 app.use('/animation', animationRouter)
 app.use('/ffprobe', ffprobeRouter)
+app.use('/youtube', youtubeRouter)
 
 if (config.sentryDsn) {
   Sentry.setupExpressErrorHandler(app)

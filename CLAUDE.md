@@ -11,7 +11,7 @@ This is an image optimization service that provides dynamic image resizing, form
 ### Core Technologies
 - **TypeScript** with functional programming patterns using `fp-ts`
 - **Sharp** for image processing and optimization
-- **Express.js** server with three main endpoints: `/image`, `/animation`, `/ffprobe`
+- **Express.js** server with main endpoints: `/image`, `/youtube`, `/animation`, `/ffprobe`
 - **Redis** for caching processed images and metadata
 - **FFmpeg** for animated GIF to video conversion
 - **Docker** containerization with automated CI/CD
@@ -48,6 +48,11 @@ yarn cli                    # Run CLI scripts with ts-node
 - Query params: `url` (required), `w`, `h`, `q` (quality 1-100), `format` (jpg|webp|avif)
 - Automatic format detection via `Accept` header if no format specified
 - Returns optimized image with proper cache headers
+
+### YouTube Thumbnail (`/youtube/:id`)
+- Serves the thumbnail of a YouTube video: `maxresdefault.jpg`, falling back to `hqdefault.jpg` (resolution cached in Redis for 1 day)
+- Accepts the same `w`, `h`, `q`, `format` params and `Accept` negotiation as `/image`
+- Thumbnail host is configured by `youtube.thumbnailHost`; not subject to `domains`
 
 ### Animation Conversion (`/animation`)
 - Query params: `url` (required), `format` (mp4|webm)

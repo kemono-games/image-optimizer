@@ -8,6 +8,7 @@ import { analyzeVideoBuffer, analyzeVideoFile, upload } from '@/lib/ffprobe'
 import { D, E } from '@/lib/fp'
 import http from '@/lib/http'
 import Logger from '@/lib/logger'
+import { parseSourceUrl } from '@/lib/url'
 import { FfprobeCacheParams } from '@/types'
 
 const logger = Logger.get('ffprobe')
@@ -82,25 +83,15 @@ router.get('/', async (req, res) => {
 
   const { url } = params.right
 
-  // 验证 URL 格式
-  let videoUrl: URL
-  try {
-    videoUrl = new URL(url)
-  } catch (err) {
+  // 验证 URL 格式、协议和 domain 白名单
+  const sourceUrl = parseSourceUrl(url)
+  if (E.isLeft(sourceUrl)) {
     return res.status(400).json({
       success: false,
-      error: 'Invalid URL format',
+      error: sourceUrl.left,
     })
   }
-
-  // 检查 domain 白名单
-  const allowDomains = config.domains ?? []
-  if (!allowDomains.includes(videoUrl.hostname)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Domain not allowed',
-    })
-  }
+  const videoUrl = sourceUrl.right
 
   const cacheKey: FfprobeCacheParams = {
     url,

@@ -8,6 +8,7 @@ import { getWithCache } from '@/lib/cache'
 import { config } from '@/lib/config'
 import { D, E } from '@/lib/fp'
 import Logger from '@/lib/logger'
+import { parseSourceUrl } from '@/lib/url'
 
 const logger = Logger.get('animation optimize')
 
@@ -30,25 +31,36 @@ const revalidate =
   (url: string, format: 'mp4' | 'webm') =>
   async (): Promise<[null, PassThrough]> => {
     const command = ffmpeg(url)
+      // 纵深防御：禁止 ffmpeg 通过 file:、concat:、subfile: 等协议读取本地资源
+      .inputOptions(['-protocol_whitelist http,https,tcp,tls'])
       .setFfprobePath(config.gifOptimize.ffprobePath)
       .setFfmpegPath(config.gifOptimize.ffmpegPath)
       .noAudio()
       .format(format)
-    const stream =
-      format === 'mp4'
-        ? command
-            .videoCodec('libx264')
-            .outputOptions([
-              '-pix_fmt yuv420p',
-              '-movflags +faststart',
-              '-movflags frag_keyframe+empty_moov',
-              "-filter:v crop='floor(in_w/2)*2:floor(in_h/2)*2'",
-            ])
-            .pipe()
-        : command
-            .videoCodec('libvpx-vp9')
-            .outputOptions(['-b:v 0', '-crf 40'])
-            .pipe()
+    const stream = new PassThrough()
+    // ffmpeg 出错（如源地址 404）时必须把 error 转发到下游，否则 command 上的
+    // unhandled 'error' 事件会直接让整个 Node 进程崩溃。
+    // stdout 不能自动 end 下游：stdout 关闭早于进程退出，失败时下游会先收到
+    // 'end'，把不完整的结果写进缓存；改为由 ffmpeg 的 end/error 决定结束方式
+    command
+      .on('error', (err) => stream.destroy(err))
+      .on('end', () => stream.end())
+    if (format === 'mp4') {
+      command
+        .videoCodec('libx264')
+        .outputOptions([
+          '-pix_fmt yuv420p',
+          '-movflags +faststart',
+          '-movflags frag_keyframe+empty_moov',
+          "-filter:v crop='floor(in_w/2)*2:floor(in_h/2)*2'",
+        ])
+        .pipe(stream, { end: false })
+    } else {
+      command
+        .videoCodec('libvpx-vp9')
+        .outputOptions(['-b:v 0', '-crf 40'])
+        .pipe(stream, { end: false })
+    }
     return [null, stream]
   }
 
@@ -60,12 +72,10 @@ router.head('/', async (req, res) => {
     return res.end('Missing parameter')
   }
   const { url, format } = params
-  let videoUrl: URL
-  try {
-    videoUrl = new URL(url)
-  } catch (err) {
+  const videoUrl = parseSourceUrl(url)
+  if (E.isLeft(videoUrl)) {
     res.writeHead(400)
-    return res.end(err.message || 'Invalid URL')
+    return res.end(videoUrl.left)
   }
 
   const cacheKey = { url, format, type: 'animation' as const }
@@ -73,7 +83,7 @@ router.head('/', async (req, res) => {
   try {
     await getWithCache({
       cacheKey,
-      fetcher: revalidate(videoUrl.toString(), format),
+      fetcher: revalidate(config.urlParser(videoUrl.right.toString()), format),
       callback: (cacheStatus, cachePath: string, age) =>
         new Promise<void>((resolve) => {
           const stat = fs.statSync(cachePath)
@@ -107,12 +117,10 @@ router.get('/', async (req, res) => {
     return res.end('Missing parameter')
   }
   const { url, format } = params
-  let videoUrl: URL
-  try {
-    videoUrl = new URL(url)
-  } catch (err) {
+  const videoUrl = parseSourceUrl(url)
+  if (E.isLeft(videoUrl)) {
     res.writeHead(400)
-    return res.end(err.message || 'Invalid URL')
+    return res.end(videoUrl.left)
   }
 
   const cacheKey = { url, format, type: 'animation' as const }
@@ -120,7 +128,7 @@ router.get('/', async (req, res) => {
   try {
     await getWithCache({
       cacheKey,
-      fetcher: revalidate(videoUrl.toString(), format),
+      fetcher: revalidate(config.urlParser(videoUrl.right.toString()), format),
       callback: (cacheStatus, cachePath) =>
         new Promise<void>((resolve) => {
           logger.info(`[${cacheStatus.toUpperCase()}] ${url}, format:${format}`)

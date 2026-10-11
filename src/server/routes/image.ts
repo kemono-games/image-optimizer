@@ -2,6 +2,7 @@ import { Router } from 'express'
 
 import { config } from '@/lib/config'
 import { D, E } from '@/lib/fp'
+import { parseSourceUrl } from '@/lib/url'
 
 import {
   optimizeOptionsDecoder,
@@ -26,18 +27,10 @@ router.get('/', async (req, res) => {
     return res.end('Missing url parameter')
   }
 
-  let imageUrl: URL
-  try {
-    imageUrl = new URL(url)
-  } catch (err) {
+  const imageUrl = parseSourceUrl(url)
+  if (E.isLeft(imageUrl)) {
     res.writeHead(400)
-    return res.end(err.message || 'Invalid URL')
-  }
-
-  const allowDomains = config.domains ?? []
-  if (!allowDomains.includes(imageUrl.hostname)) {
-    res.writeHead(400)
-    return res.end('Domain not allowed')
+    return res.end(imageUrl.left)
   }
 
   const targetFormat = resolveTargetFormat(options.format, headers.accept)
@@ -48,7 +41,7 @@ router.get('/', async (req, res) => {
 
   await serveOptimizedImage(res, {
     url,
-    fetchUrl: config.urlParser(imageUrl.toString()),
+    fetchUrl: config.urlParser(imageUrl.right.toString()),
     options,
     targetFormat,
   })

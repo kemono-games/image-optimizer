@@ -58,7 +58,16 @@ const revalidate =
     } else {
       command
         .videoCodec('libvpx-vp9')
-        .outputOptions(['-b:v 0', '-crf 40'])
+        .outputOptions([
+          '-b:v 0',
+          '-crf 40',
+          // GIF 解码为 bgra 时 ffmpeg 会自动选 gbrap，libvpx-vp9 拒绝该格式导致转码失败；
+          // 限定为 yuva420p/yuv420p，由 ffmpeg 按输入挑选：透明 GIF 保留 alpha，其余不带 alpha
+          '-filter:v format=yuva420p|yuv420p',
+          // 默认参数下 VP9 极慢，容易超过 cache lock 的等待上限
+          '-row-mt 1',
+          '-cpu-used 4',
+        ])
         .pipe(stream, { end: false })
     }
     return [null, stream]

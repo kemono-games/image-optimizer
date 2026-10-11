@@ -138,6 +138,9 @@ export const serveOptimizedImage = async (
       },
       callback(cacheStatus, cachePath, age) {
         return new Promise<void>((resolve) => {
+          // Explicit formats are selected by the URL; negotiated formats also
+          // vary by Accept. Merge rather than replace any existing Vary fields.
+          if (!options.format) res.vary('Accept')
           res.writeHead(200, {
             'Content-Type': targetFormat,
             'Cache-Control':

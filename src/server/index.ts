@@ -32,7 +32,6 @@ app.use(
     skip: (req) => req.path === '/health',
   }),
 )
-app.use(express.urlencoded({ extended: false }))
 
 app.all('/health', (_, res) => res.send('ok'))
 app.use('/image', imageRouter)

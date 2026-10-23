@@ -1,6 +1,5 @@
-FROM alpine:edge AS base
+FROM node:24.22.1-alpine AS base
 ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
-RUN apk add nodejs yarn npm
 WORKDIR /app
 
 FROM base AS deps

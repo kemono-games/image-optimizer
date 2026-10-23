@@ -83,7 +83,7 @@ yarn cli                    # Run CLI scripts with ts-node
 
 ## Docker & Deployment
 
-- Base image: `node:22-alpine`
+- Base image: `node:24.22.1-alpine` (pin exact patch versions; Alpine repo provides libvips >= 8.17.1 required by sharp)
 - Automated builds on master branch push
 - Multi-registry deployment (Aliyun AP-Southeast-1 and Shenzhen)
 - Environment-specific deployment via GitHub Actions
